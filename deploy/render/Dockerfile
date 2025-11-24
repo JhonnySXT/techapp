@@ -19,13 +19,6 @@ COPY gradle.properties ./
 COPY server/build.gradle.kts ./server/
 COPY server/src/ ./server/src/
 
-# Копируем статические файлы фронтенда (для PWA)
-COPY test-app.html ./
-COPY config.js ./
-COPY manifest.json ./
-COPY sw.js ./
-COPY icon-*.png ./
-
 # Даем права на выполнение gradlew
 RUN chmod +x ./gradlew
 
@@ -40,13 +33,6 @@ WORKDIR /app
 
 # Копируем собранный JAR из стадии сборки
 COPY --from=build /app/server/build/libs/server-all.jar app.jar
-
-# Копируем статические файлы фронтенда из стадии сборки
-COPY --from=build /app/test-app.html ./
-COPY --from=build /app/config.js ./
-COPY --from=build /app/manifest.json ./
-COPY --from=build /app/sw.js ./
-COPY --from=build /app/icon-*.png ./
 
 # Создаем директорию для данных (база данных SQLite)
 RUN mkdir -p /app/data
