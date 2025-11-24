@@ -2,8 +2,17 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#4a7c2a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Techapp">
     <title>Загородный клуб "Дача" - Тестовый интерфейс</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <script src="/config.js"></script>
     <style>
         * {
             margin: 0;
@@ -17,9 +26,90 @@
             background: linear-gradient(135deg, #2d5016 0%, #1a3d0f 50%, #23301a 100%);
             background-attachment: fixed;
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
             position: relative;
             overflow-x: hidden;
+            /* Улучшенная поддержка мобильных устройств */
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* Мобильная адаптивность */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                max-width: 100%;
+            }
+            
+            .header h1 {
+                font-size: 18px !important;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+            
+            .tab {
+                font-size: 12px;
+                padding: 8px 12px;
+                flex: 1 1 auto;
+                min-width: calc(50% - 5px);
+            }
+            
+            .list-item {
+                padding: 12px !important;
+            }
+            
+            .list-item h3 {
+                font-size: 16px !important;
+            }
+            
+            button {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+            
+            .modal {
+                width: 95% !important;
+                max-width: 95% !important;
+                margin: 10px auto;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                font-size: 16px; /* Предотвращает зум на iOS */
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .header-right {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .tabs {
+                gap: 3px;
+            }
+            
+            .tab {
+                font-size: 11px;
+                padding: 6px 8px;
+                min-width: calc(50% - 3px);
+            }
         }
         
         body::before {
@@ -171,8 +261,6 @@
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
-        }
-            z-index: 1000;
         }
         
         .user-info {
@@ -708,6 +796,35 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+        
+        /* Стили для тестирования */
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .test-result.passed {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .test-result.failed {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .test-result.running {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
     </style>
 </head>
 <body>
@@ -823,6 +940,7 @@
                 <button class="tab" onclick="showTab('tickets')">🎫 Заявки</button>
                 <button class="tab" id="createTicketTabBtn" onclick="showTab('createTicket')" style="display: none;">➕ Создать заявку</button>
                 <button class="tab" id="onlineEmployeesTabBtn" onclick="showTab('onlineEmployees')">👨‍💼 Сотрудники онлайн</button>
+                <button class="tab" id="testingTabBtn" onclick="showTab('testing')" style="display: none;">🧪 Тестирование</button>
             </div>
             
             <div id="profileTab" class="tab-content active">
@@ -908,11 +1026,37 @@
                 <button onclick="loadOnlineEmployees()" style="margin-bottom: 20px;">🔄 Обновить список</button>
                 <div id="onlineEmployeesList">Загрузка...</div>
             </div>
+            
+            <div id="testingTab" class="tab-content" style="display: none;">
+                <h2>🧪 Тестирование системы</h2>
+                <div style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid rgba(76, 175, 80, 0.3);">
+                    <p style="color: #666; margin-bottom: 15px;">
+                        Эта функция позволяет проверить работоспособность всех основных служб приложения. 
+                        Тесты проверяют сервер, авторизацию, работу с заявками и пользователями, а также поддержку офлайн-режима.
+                    </p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="runAllTests()" style="padding: 12px 24px; background: #4a7c2a; color: white; border: 2px solid #2d5016; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                            ▶️ Запустить все тесты
+                        </button>
+                        <button onclick="clearTestResults()" style="padding: 12px 24px; background: #dc3545; color: white; border: 2px solid #c82333; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                            🗑️ Очистить результаты
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="testResultsContainer" style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 12px; border: 2px solid rgba(76, 175, 80, 0.3);">
+                    <h3>📊 Результаты тестирования</h3>
+                    <div id="testResults" style="margin-top: 15px;"></div>
+                    <div id="testSummary" style="display: none; margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 8px; border-left: 4px solid #2196F3;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:8081/api/v1';
+        // Используем конфигурацию из config.js
+        const API_BASE = window.APP_CONFIG?.API_BASE || 'http://localhost:8081/api/v1';
+        const FILE_BASE = window.APP_CONFIG?.FILE_BASE || 'http://localhost:8081';
         let authToken = localStorage.getItem('authToken');
         let currentUser = null;
         
@@ -1089,89 +1233,7 @@
             });
         });
         
-        // Создание заявки
-        document.getElementById('createTicketForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const resultDiv = document.getElementById('createTicketResult');
-            
-            try {
-                // Сначала загружаем фотографии
-                const photoInput = document.getElementById('ticketPhotos');
-                const photoFiles = Array.from(photoInput.files).slice(0, 5); // Ограничиваем до 5
-                let uploadedPhotos = [];
-                
-                if (photoFiles.length > 0) {
-                    const formData = new FormData();
-                    photoFiles.forEach(file => {
-                        formData.append('files', file);
-                    });
-                    
-                    const uploadResponse = await fetch(`${API_BASE}/files/upload`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`
-                        },
-                        body: formData
-                    });
-                    
-                    const uploadText = await uploadResponse.text();
-                    let uploadData = {};
-                    try {
-                        uploadData = uploadText ? JSON.parse(uploadText) : {};
-                    } catch (e) {
-                        console.error('Ошибка парсинга ответа загрузки файлов:', e);
-                    }
-                    
-                    if (uploadResponse.ok && uploadData.files) {
-                        uploadedPhotos = uploadData.files;
-                    } else {
-                        const errorMsg = uploadData.error || `HTTP ${uploadResponse.status}`;
-                        showResult(resultDiv, `❌ Ошибка загрузки фотографий: ${errorMsg}`, 'error');
-                        return;
-                    }
-                }
-                
-                // Создаем заявку с фотографиями
-                const response = await fetch(`${API_BASE}/tickets`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        title: document.getElementById('ticketTitle').value,
-                        description: document.getElementById('ticketDescription').value,
-                        priority: document.getElementById('ticketPriority').value,
-                        assigneeId: document.getElementById('ticketAssigneeId').value || null,
-                        photos: uploadedPhotos
-                    })
-                });
-                
-                const text = await response.text();
-                let data = {};
-                try {
-                    data = text ? JSON.parse(text) : {};
-                } catch (e) {
-                    console.error('Ошибка парсинга ответа при создании заявки:', e, 'Текст ответа:', text);
-                    showResult(resultDiv, `Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}`, 'error');
-                    return;
-                }
-                
-                if (response.ok) {
-                    showResult(resultDiv, `✅ Заявка создана! ID: ${data.id}`, 'success');
-                    document.getElementById('createTicketForm').reset();
-                    document.getElementById('photoPreview').innerHTML = '';
-                    loadTickets();
-                } else {
-                    const errorMsg = data.error || data.details || `HTTP ${response.status}`;
-                    showResult(resultDiv, `❌ Ошибка: ${errorMsg}`, 'error');
-                    console.error('Ошибка создания заявки:', data);
-                }
-            } catch (error) {
-                console.error('Ошибка при создании заявки:', error);
-                showResult(resultDiv, `❌ Ошибка: ${error.message}`, 'error');
-            }
-        });
+        // Создание заявки - обработчик будет добавлен позже с поддержкой офлайн-режима
         
         async function loadUsers() {
             const listDiv = document.getElementById('usersList');
@@ -1260,7 +1322,7 @@
                                             <strong>Фотографии (${ticket.photos.length}):</strong>
                                             <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
                                                 ${ticket.photos.slice(0, 3).map(photo => {
-                                                    const photoUrl = `http://localhost:8081/${photo}`;
+                                                    const photoUrl = `${FILE_BASE}/${photo}`;
                                                     return `<img src="${photoUrl}" 
                                                           style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid rgba(76, 175, 80, 0.3); cursor: pointer; object-fit: cover;"
                                                           onerror="this.style.display='none';">`;
@@ -1403,7 +1465,6 @@
         async function acceptTicket(ticketId, estimatedCompletionTime = null) {
             if (!ticketId) {
                 alert('❌ Ошибка: ID заявки не указан');
-                console.error('acceptTicket вызван с ticketId =', ticketId);
                 return;
             }
             
@@ -1428,7 +1489,6 @@
                     data = text ? JSON.parse(text) : {};
                 } catch (e) {
                     alert(`Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}`);
-                    console.error('Ошибка парсинга ответа:', text);
                     return;
                 }
                 if (response.ok) {
@@ -1437,11 +1497,9 @@
                 } else {
                     const errorMsg = data.error || `HTTP ${response.status}`;
                     alert(`❌ Ошибка: ${errorMsg}`);
-                    console.error('Ошибка принятия заявки:', data);
                 }
             } catch (error) {
                 alert(`❌ Ошибка соединения: ${error.message}`);
-                console.error('Ошибка при принятии заявки:', error);
             }
         }
         
@@ -1455,14 +1513,13 @@
                 try {
                     data = text ? JSON.parse(text) : {};
                 } catch (e) {
-                    console.error('Ошибка парсинга JSON:', e);
                     return [];
                 }
                 if (response.ok && data.items && Array.isArray(data.items)) {
                     return data.items.filter(u => u.role === 'TECHNICIAN');
                 }
             } catch (error) {
-                console.error('Ошибка загрузки техников:', error);
+                // Игнорируем ошибки загрузки техников
             }
             return [];
         }
@@ -1470,7 +1527,6 @@
         async function loadOnlineEmployees() {
             const listDiv = document.getElementById('onlineEmployeesList');
             if (!listDiv) {
-                console.error('Элемент onlineEmployeesList не найден');
                 return;
             }
             
@@ -1487,14 +1543,12 @@
                 try {
                     usersData = usersText ? JSON.parse(usersText) : {};
                 } catch (e) {
-                    console.error('Ошибка парсинга ответа пользователей:', e, 'Текст:', usersText);
                     listDiv.innerHTML = `<div class="error">Ошибка: Сервер вернул невалидный ответ. Статус: ${usersResponse.status}</div>`;
                     return;
                 }
                 
                 if (!usersResponse.ok) {
                     const errorMsg = usersData.error || `HTTP ${usersResponse.status}`;
-                    console.error('Ошибка загрузки пользователей:', errorMsg);
                     listDiv.innerHTML = `<div class="error">Ошибка: ${errorMsg}</div>`;
                     return;
                 }
@@ -1511,13 +1565,11 @@
                         try {
                             ticketsData = ticketsText ? JSON.parse(ticketsText) : { items: [] };
                         } catch (e) {
-                            console.warn('Ошибка парсинга заявок:', e);
+                            // Игнорируем ошибки парсинга заявок
                         }
-                    } else {
-                        console.warn('Не удалось загрузить заявки для определения статуса занятости');
                     }
                 } catch (e) {
-                    console.warn('Ошибка при загрузке заявок:', e);
+                    // Игнорируем ошибки загрузки заявок
                 }
                 
                 if (usersData.items && Array.isArray(usersData.items)) {
@@ -1599,7 +1651,6 @@
                     listDiv.innerHTML = `<div class="error">Ошибка: Неверный формат данных</div>`;
                 }
             } catch (error) {
-                console.error('Ошибка загрузки сотрудников:', error);
                 listDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
             }
         }
@@ -1644,7 +1695,6 @@
                     `;
                 }).join('');
             } catch (error) {
-                console.error('Ошибка загрузки техников:', error);
                 listDiv.innerHTML = `<p style="text-align: center; color: #d32f2f;">Ошибка: ${error.message}</p>`;
             }
         }
@@ -1671,12 +1721,10 @@
         async function assignTicket(ticketId, technicianId) {
             if (!ticketId || !technicianId) {
                 alert('❌ Ошибка: ID заявки или техника не указаны');
-                console.error('assignTicket вызван с:', { ticketId, technicianId });
                 return;
             }
             
             try {
-                console.log('Назначаем техника:', { ticketId, technicianId });
                 const response = await fetch(`${API_BASE}/tickets/${ticketId}/assign`, {
                     method: 'PUT',
                     headers: { 
@@ -1687,12 +1735,10 @@
                 });
                 
                 const text = await response.text();
-                console.log('Ответ сервера:', { status: response.status, text });
                 let data = {};
                 try {
                     data = text ? JSON.parse(text) : {};
                 } catch (e) {
-                    console.error('Ошибка парсинга ответа:', e, 'Текст:', text);
                     alert(`Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}`);
                     return;
                 }
@@ -1701,11 +1747,9 @@
                     alert('✅ Техник назначен успешно!');
                 } else {
                     const errorMsg = data.error || `HTTP ${response.status}`;
-                    console.error('Ошибка назначения техника:', data);
                     alert(`❌ Ошибка: ${errorMsg}`);
                 }
             } catch (error) {
-                console.error('Ошибка при назначении техника:', error);
                 alert(`❌ Ошибка соединения: ${error.message}`);
             }
         }
@@ -1822,7 +1866,7 @@
                             <h4 style="color: #2d5016; margin-bottom: 15px;">📷 Фотографии (${ticket.photos.length}):</h4>
                             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
                                 ${ticket.photos.map((photo, index) => {
-                                    const photoUrl = `http://localhost:8081/${photo}`;
+                                    const photoUrl = `${FILE_BASE}/${photo}`;
                                     return `<div style="position: relative;">
                                         <img src="${photoUrl}" 
                                              style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(76, 175, 80, 0.3); cursor: pointer;"
@@ -1841,7 +1885,6 @@
                     contentDiv.innerHTML = `<div class="error">Ошибка загрузки заявки</div>`;
                 }
             } catch (error) {
-                console.error('Ошибка загрузки заявки:', error);
                 contentDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
             }
         }
@@ -1910,6 +1953,11 @@
                 // Загружаем данные при переключении на вкладку
                 if (tabName === 'onlineEmployees') {
                     loadOnlineEmployees();
+                } else if (tabName === 'testing') {
+                    // Инициализируем тестирование при открытии вкладки
+                    if (document.getElementById('testResults').innerHTML === '') {
+                        document.getElementById('testResults').innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Нажмите "Запустить все тесты" для проверки системы</p>';
+                    }
                 }
             }
         }
@@ -1945,6 +1993,14 @@
             // Вкладка "Сотрудники онлайн" доступна всем авторизованным пользователям
             const onlineEmployeesTabBtn = document.getElementById('onlineEmployeesTabBtn');
             if (onlineEmployeesTabBtn) onlineEmployeesTabBtn.style.display = 'block';
+            
+            // Вкладка "Тестирование" доступна только администратору
+            const testingTabBtn = document.getElementById('testingTabBtn');
+            if (currentUser.role === 'ADMIN') {
+                if (testingTabBtn) testingTabBtn.style.display = 'block';
+            } else {
+                if (testingTabBtn) testingTabBtn.style.display = 'none';
+            }
             
             // Загружаем личный кабинет (первая вкладка)
             loadProfile();
@@ -2037,14 +2093,12 @@
                 try {
                     usersData = usersText ? JSON.parse(usersText) : {};
                 } catch (e) {
-                    console.error('Ошибка парсинга ответа пользователей:', e, 'Текст ответа:', usersText);
                     profileDiv.innerHTML = `<div class="error">Ошибка: Сервер вернул невалидный ответ. Статус: ${usersResponse.status}</div>`;
                     return;
                 }
                 
                 // Если нет доступа к списку пользователей, показываем информацию без подсчета техников
                 if (!usersResponse.ok) {
-                    console.warn('Нет доступа к списку пользователей, показываем упрощенную версию');
                     const position = getPosition(currentUser);
                     const lastName = currentUser.name.split(' ')[0]; // Фамилия
                     
@@ -2108,11 +2162,9 @@
                         </div>
                     `;
                 } else {
-                    console.error('Неверный формат данных пользователей:', usersData);
                     profileDiv.innerHTML = `<div class="error">Ошибка: Неверный формат данных. Статус: ${usersResponse.status}</div>`;
                 }
             } catch (error) {
-                console.error('Ошибка загрузки профиля руководителя:', error);
                 profileDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
             }
         }
@@ -2201,9 +2253,9 @@
                             let usersData = {};
                             try {
                                 usersData = usersText ? JSON.parse(usersText) : {};
-                            } catch (e) {
-                                console.warn('Не удалось распарсить список пользователей:', e);
-                            }
+                    } catch (e) {
+                        // Игнорируем ошибки парсинга
+                    }
                             
                             if (usersData.items && Array.isArray(usersData.items)) {
                                 const user = usersData.items.find(u => u.id === userId);
@@ -2234,14 +2286,12 @@
                                     // Токен валиден, но пользователь не найден в списке
                                     // Используем сохраненную информацию или дефолтное имя
                                     if (!currentUser || currentUser.name === 'Пользователь') {
-                                        console.warn('Пользователь не найден в списке пользователей, но токен валиден. ID:', userId);
                                         currentUser = { name: 'Пользователь', role: role };
                                     }
                                 } else {
                                     throw new Error('Не авторизован');
                                 }
                             } catch (e) {
-                                console.error('Ошибка проверки токена через заявки:', e);
                                 throw new Error('Не авторизован');
                             }
                         }
@@ -2252,7 +2302,6 @@
                     throw new Error('Неверный токен');
                 }
             } catch (e) {
-                console.error('Ошибка проверки авторизации:', e);
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('currentUser');
                 authToken = null;
@@ -2260,4 +2309,1195 @@
             }
         }
         
-        // ==============
+        // ==================== ОФЛАЙН-РЕЖИМ И УВЕДОМЛЕНИЯ ====================
+        
+        // Инициализация Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .catch(() => {
+                        // Игнорируем ошибки регистрации Service Worker
+                    });
+            });
+        }
+        
+        // IndexedDB для офлайн-хранилища
+        const DB_NAME = 'techapp_offline_db';
+        const DB_VERSION = 1;
+        let db = null;
+        
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    
+                    // Хранилище для заявок
+                    if (!database.objectStoreNames.contains('tickets')) {
+                        const ticketsStore = database.createObjectStore('tickets', { keyPath: 'id' });
+                        ticketsStore.createIndex('status', 'status', { unique: false });
+                        ticketsStore.createIndex('createdAt', 'createdAt', { unique: false });
+                    }
+                    
+                    // Хранилище для пользователей
+                    if (!database.objectStoreNames.contains('users')) {
+                        database.createObjectStore('users', { keyPath: 'id' });
+                    }
+                    
+                    // Хранилище для отложенных операций (синхронизация)
+                    if (!database.objectStoreNames.contains('pending_operations')) {
+                        const pendingStore = database.createObjectStore('pending_operations', { keyPath: 'id', autoIncrement: true });
+                        pendingStore.createIndex('type', 'type', { unique: false });
+                    }
+                };
+            });
+        }
+        
+        // Сохранение данных в IndexedDB
+        async function saveToOfflineDB(storeName, data) {
+            if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                
+                if (Array.isArray(data)) {
+                    data.forEach(item => store.put(item));
+                } else {
+                    store.put(data);
+                }
+                
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(transaction.error);
+            });
+        }
+        
+        // Загрузка данных из IndexedDB
+        async function loadFromOfflineDB(storeName) {
+            if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+        
+        // Сохранение отложенной операции
+        async function savePendingOperation(operation) {
+            if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['pending_operations'], 'readwrite');
+                const store = transaction.objectStore('pending_operations');
+                const request = store.add({
+                    ...operation,
+                    timestamp: Date.now()
+                });
+                
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+        
+        // Удаление выполненной операции
+        async function removePendingOperation(id) {
+            if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['pending_operations'], 'readwrite');
+                const store = transaction.objectStore('pending_operations');
+                const request = store.delete(id);
+                
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+        
+        // Получение всех отложенных операций
+        async function getPendingOperations() {
+            if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['pending_operations'], 'readonly');
+                const store = transaction.objectStore('pending_operations');
+                const request = store.getAll();
+                
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+        
+        // Отслеживание статуса подключения
+        let isOnline = navigator.onLine;
+        let lastTicketsCount = 0;
+        
+        function updateConnectionStatus(status) {
+            const statusEl = document.getElementById('connectionStatus');
+            const dotEl = document.getElementById('statusDot');
+            const textEl = document.getElementById('statusText');
+            
+            if (!statusEl || !dotEl || !textEl) return;
+            
+            statusEl.className = `connection-status ${status}`;
+            dotEl.className = `status-dot ${status}`;
+            
+            switch(status) {
+                case 'online':
+                    textEl.textContent = 'Онлайн';
+                    isOnline = true;
+                    break;
+                case 'offline':
+                    textEl.textContent = 'Офлайн';
+                    isOnline = false;
+                    break;
+                case 'syncing':
+                    textEl.textContent = 'Синхронизация...';
+                    break;
+            }
+        }
+        
+        // Обработчики событий подключения
+        window.addEventListener('online', () => {
+            updateConnectionStatus('syncing');
+            syncPendingOperations();
+        });
+        
+        window.addEventListener('offline', () => {
+            updateConnectionStatus('offline');
+        });
+        
+        // Проверка статуса при загрузке
+        if (navigator.onLine) {
+            updateConnectionStatus('online');
+        } else {
+            updateConnectionStatus('offline');
+        }
+        
+        // Периодическая проверка подключения
+        setInterval(async () => {
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    method: 'HEAD',
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    cache: 'no-cache'
+                });
+                if (response.ok && !isOnline) {
+                    updateConnectionStatus('syncing');
+                    await syncPendingOperations();
+                    updateConnectionStatus('online');
+                }
+            } catch (error) {
+                if (isOnline) {
+                    updateConnectionStatus('offline');
+                }
+            }
+        }, 30000); // Проверка каждые 30 секунд
+        
+        // Синхронизация отложенных операций
+        async function syncPendingOperations() {
+            if (!isOnline || !authToken) return;
+            
+            try {
+                const pendingOps = await getPendingOperations();
+                
+                for (const op of pendingOps) {
+                    try {
+                        let response;
+                        
+                        switch(op.type) {
+                            case 'create_ticket':
+                                response = await fetch(`${API_BASE}/tickets`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${authToken}`
+                                    },
+                                    body: JSON.stringify(op.data)
+                                });
+                                break;
+                            case 'accept_ticket':
+                                response = await fetch(`${API_BASE}/tickets/${op.ticketId}/accept`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${authToken}`
+                                    },
+                                    body: JSON.stringify(op.data || {})
+                                });
+                                break;
+                            case 'complete_ticket':
+                                response = await fetch(`${API_BASE}/tickets/${op.ticketId}/complete`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${authToken}`
+                                    },
+                                    body: JSON.stringify(op.data || {})
+                                });
+                                break;
+                            case 'assign_ticket':
+                                response = await fetch(`${API_BASE}/tickets/${op.ticketId}/assign`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${authToken}`
+                                    },
+                                    body: JSON.stringify(op.data)
+                                });
+                                break;
+                        }
+                        
+                        if (response && response.ok) {
+                            await removePendingOperation(op.id);
+                            showNotification('✅ Операция синхронизирована', 'success');
+                        }
+                    } catch (error) {
+                        // Игнорируем ошибки синхронизации отдельных операций
+                    }
+                }
+                
+                // Обновляем данные после синхронизации
+                if (pendingOps.length > 0) {
+                    loadTickets();
+                }
+            } catch (error) {
+                // Игнорируем ошибки синхронизации
+            }
+        }
+        
+        // Обертка для fetch с поддержкой офлайн-режима
+        async function fetchWithOffline(url, options = {}) {
+            try {
+                const response = await fetch(url, options);
+                
+                // Сохраняем успешные GET запросы в кэш
+                if (response.ok && (options.method === 'GET' || !options.method)) {
+                    const data = await response.json();
+                    if (url.includes('/tickets')) {
+                        await saveToOfflineDB('tickets', data.items || []);
+                    } else if (url.includes('/users')) {
+                        await saveToOfflineDB('users', data.items || []);
+                    }
+                }
+                
+                return response;
+            } catch (error) {
+                // В офлайн-режиме пытаемся загрузить из IndexedDB
+                if (!isOnline) {
+                    if (url.includes('/tickets')) {
+                        const cachedTickets = await loadFromOfflineDB('tickets');
+                        return {
+                            ok: true,
+                            json: async () => ({ items: cachedTickets }),
+                            text: async () => JSON.stringify({ items: cachedTickets })
+                        };
+                    } else if (url.includes('/users')) {
+                        const cachedUsers = await loadFromOfflineDB('users');
+                        return {
+                            ok: true,
+                            json: async () => ({ items: cachedUsers }),
+                            text: async () => JSON.stringify({ items: cachedUsers })
+                        };
+                    }
+                }
+                throw error;
+            }
+        }
+        
+        // ==================== УВЕДОМЛЕНИЯ ====================
+        
+        let notificationPermission = Notification.permission;
+        
+        // Запрос разрешения на уведомления
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                return false;
+            }
+            
+            if (notificationPermission === 'default') {
+                notificationPermission = await Notification.requestPermission();
+            }
+            
+            return notificationPermission === 'granted';
+        }
+        
+        // Показ уведомления
+        function showNotification(title, options = {}) {
+            if (notificationPermission !== 'granted') {
+                requestNotificationPermission().then(granted => {
+                    if (granted) {
+                        showNotification(title, options);
+                    }
+                });
+                return;
+            }
+            
+            const notification = new Notification(title, {
+                icon: '🐻',
+                badge: '🐻',
+                tag: options.tag || 'techapp',
+                body: options.body || '',
+                requireInteraction: options.requireInteraction || false,
+                ...options
+            });
+            
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+            };
+            
+            // Автоматически закрываем через 5 секунд
+            setTimeout(() => notification.close(), 5000);
+        }
+        
+        // Инициализация уведомлений при входе
+        if (authToken) {
+            requestNotificationPermission();
+        }
+        
+        // Отслеживание изменений в заявках для уведомлений
+        let lastTicketsCheck = null;
+        
+        async function checkForNewTickets() {
+            if (!authToken || !isOnline) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    let data = {};
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (e) {
+                        return;
+                    }
+                    
+                    if (data.items && Array.isArray(data.items)) {
+                        const currentTickets = data.items;
+                        
+                        // Проверяем новые заявки (для техников)
+                        if (currentUser && currentUser.role === 'TECHNICIAN') {
+                            const newTickets = currentTickets.filter(ticket => 
+                                (ticket.status === 'NEW' || ticket.status === 'ASSIGNED') &&
+                                (!lastTicketsCheck || ticket.createdAt > lastTicketsCheck)
+                            );
+                            
+                            newTickets.forEach(ticket => {
+                                showNotification('🎫 Новая заявка', {
+                                    body: `${ticket.title} - ${ticket.creator.name}`,
+                                    tag: `ticket_${ticket.id}`,
+                                    requireInteraction: true
+                                });
+                            });
+                        }
+                        
+                        // Проверяем назначения (для техников)
+                        if (currentUser && currentUser.role === 'TECHNICIAN') {
+                            const tokenParts = authToken.split('.');
+                            const payload = JSON.parse(atob(tokenParts[1]));
+                            const userId = payload.sub;
+                            
+                            const assignedTickets = currentTickets.filter(ticket =>
+                                ticket.assignee && 
+                                ticket.assignee.id === userId &&
+                                ticket.status === 'ASSIGNED' &&
+                                ticket.assignedBy
+                            );
+                            
+                            assignedTickets.forEach(ticket => {
+                                showNotification('👤 Вам назначена заявка', {
+                                    body: `${ticket.title} - назначил ${ticket.assignedBy.name}`,
+                                    tag: `assign_${ticket.id}`,
+                                    requireInteraction: true
+                                });
+                            });
+                        }
+                        
+                        // Проверяем завершенные заявки (для руководителей)
+                        if (currentUser && (currentUser.role === 'MANAGER' || currentUser.role === 'DIRECTOR' || currentUser.role === 'ADMIN')) {
+                            const completedTickets = currentTickets.filter(ticket =>
+                                ticket.status === 'COMPLETED' &&
+                                ticket.completedAt &&
+                                (!lastTicketsCheck || ticket.completedAt > lastTicketsCheck)
+                            );
+                            
+                            completedTickets.forEach(ticket => {
+                                showNotification('✅ Заявка завершена', {
+                                    body: `${ticket.title} - выполнил ${ticket.assignee?.name || 'Неизвестно'}`,
+                                    tag: `complete_${ticket.id}`
+                                });
+                            });
+                        }
+                        
+                        // Обновляем время последней проверки
+                        if (currentTickets.length > 0) {
+                            lastTicketsCheck = Math.max(...currentTickets.map(t => t.createdAt));
+                        }
+                    }
+                }
+            } catch (error) {
+                // Игнорируем ошибки проверки новых заявок
+            }
+        }
+        
+        // Периодическая проверка новых заявок (каждые 30 секунд)
+        let ticketsCheckInterval = null;
+        
+        function startTicketsMonitoring() {
+            if (ticketsCheckInterval) clearInterval(ticketsCheckInterval);
+            ticketsCheckInterval = setInterval(checkForNewTickets, 30000);
+            checkForNewTickets(); // Проверяем сразу
+        }
+        
+        function stopTicketsMonitoring() {
+            if (ticketsCheckInterval) {
+                clearInterval(ticketsCheckInterval);
+                ticketsCheckInterval = null;
+            }
+        }
+        
+        // Запускаем мониторинг при входе
+        const originalShowMainInterface = showMainInterface;
+        showMainInterface = function() {
+            originalShowMainInterface();
+            if (authToken && currentUser) {
+                initDB().then(() => {
+                    startTicketsMonitoring();
+                });
+            }
+        };
+        
+        // Останавливаем мониторинг при выходе
+        const originalLogout = logout;
+        logout = function() {
+            stopTicketsMonitoring();
+            originalLogout();
+        };
+        
+        // Функция для отображения заявок (вынесена отдельно для избежания рекурсии)
+        function renderTickets(tickets) {
+            const listDiv = document.getElementById('ticketsList');
+            if (!listDiv) return;
+            
+            if (tickets.length === 0) {
+                listDiv.innerHTML = '<p style="color: #4a7c2a; font-size: 18px;">🌿 Заявок пока нет. Создайте первую заявку!</p>';
+                return;
+            }
+            
+            listDiv.innerHTML = tickets.map(ticket => {
+                const statusClass = ticket.status.toLowerCase().replace('_', '-');
+                return `
+                <div class="list-item">
+                    <h3>${ticket.title} 
+                        <span class="badge badge-${statusClass}">${ticket.status}</span>
+                        <span class="badge" style="background: #2d5016;">${ticket.priority}</span>
+                    </h3>
+                    <p>${ticket.description}</p>
+                    <p><strong>Создатель:</strong> ${ticket.creator.name} | <strong>Исполнитель:</strong> ${ticket.assignee?.name || 'Не назначен'}</p>
+                    <p><strong>Создано:</strong> ${new Date(ticket.createdAt * 1000).toLocaleString('ru-RU')}</p>
+                    ${ticket.estimatedCompletionTime ? 
+                        `<p><strong>Примерное время выполнения:</strong> ${new Date(ticket.estimatedCompletionTime * 1000).toLocaleString('ru-RU')}</p>` : ''}
+                    ${ticket.comments ? 
+                        `<p><strong>Комментарии:</strong> ${ticket.comments}</p>` : ''}
+                    ${ticket.assignedBy ? 
+                        `<p><strong>Назначен руководителем:</strong> ${ticket.assignedBy.name}</p>` : ''}
+                    ${ticket.photos && ticket.photos.length > 0 ? 
+                        `<div style="margin-top: 15px;">
+                            <strong>Фотографии (${ticket.photos.length}):</strong>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                                ${ticket.photos.slice(0, 3).map(photo => {
+                                    const photoUrl = `${FILE_BASE}/${photo}`;
+                                    return `<img src="${photoUrl}" 
+                                          style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid rgba(76, 175, 80, 0.3); cursor: pointer; object-fit: cover;"
+                                          onerror="this.style.display='none';"
+                                          alt="Фото">`;
+                                }).join('')}
+                                ${ticket.photos.length > 3 ? `<div style="width: 100px; height: 100px; border-radius: 8px; border: 2px solid rgba(76, 175, 80, 0.3); display: flex; align-items: center; justify-content: center; background: rgba(76, 175, 80, 0.1); color: #4a7c2a; font-weight: bold;">+${ticket.photos.length - 3}</div>` : ''}
+                            </div>
+                        </div>` : ''}
+                    <div class="actions">
+                        <button class="btn-small" style="background: #0288d1; color: white; border-color: #01579b;" onclick="showTicketViewModal('${ticket.id}')">👁️ Просмотр</button>
+                        ${ticket.status === 'NEW' || ticket.status === 'ASSIGNED' ? 
+                            (currentUser && currentUser.role === 'TECHNICIAN' ? 
+                                `<button class="btn-small btn-success" onclick="showAcceptTicketModal('${ticket.id}')">✅ Принять</button>` :
+                                (currentUser && (currentUser.role === 'MANAGER' || currentUser.role === 'DIRECTOR' || currentUser.role === 'ADMIN') ?
+                                    `<button class="btn-small btn-success" onclick="showAssignTicketModal('${ticket.id}')">👤 Назначить техника</button>` : '')) : ''}
+                        ${ticket.status === 'IN_PROGRESS' && currentUser && currentUser.role === 'TECHNICIAN' ? 
+                            `<button class="btn-small btn-success" onclick="showCompleteTicketModal('${ticket.id}')">✔️ Завершить</button>` : ''}
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+        
+        // Модифицируем loadTickets для поддержки офлайн-режима
+        const originalLoadTickets = loadTickets;
+        loadTickets = async function() {
+            const listDiv = document.getElementById('ticketsList');
+            if (!listDiv) return;
+            listDiv.innerHTML = 'Загрузка...';
+            
+            try {
+                const response = await fetchWithOffline(`${API_BASE}/tickets`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const text = await response.text();
+                let data;
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    // Пытаемся загрузить из офлайн-хранилища
+                    if (!isOnline) {
+                        const cachedTickets = await loadFromOfflineDB('tickets');
+                        data = { items: cachedTickets };
+                    } else {
+                        listDiv.innerHTML = `<div class="error">Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}. Проверьте авторизацию.</div>`;
+                        return;
+                    }
+                }
+                
+                if (response.ok || !isOnline) {
+                    if (data.items && Array.isArray(data.items)) {
+                        renderTickets(data.items);
+                    } else {
+                        listDiv.innerHTML = `<div class="error">Ошибка: Неверный формат данных</div>`;
+                    }
+                } else {
+                    listDiv.innerHTML = `<div class="error">Ошибка: ${data.error || `HTTP ${response.status}. Возможно, требуется авторизация.`}</div>`;
+                }
+            } catch (error) {
+                // В офлайн-режиме загружаем из кэша
+                if (!isOnline) {
+                    try {
+                        const cachedTickets = await loadFromOfflineDB('tickets');
+                        renderTickets(cachedTickets);
+                    } catch (e) {
+                        listDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+                    }
+                } else {
+                    listDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+                }
+            }
+        };
+        
+        // Модифицируем создание заявки для офлайн-режима
+        document.getElementById('createTicketForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('createTicketResult');
+            
+            const ticketData = {
+                title: document.getElementById('ticketTitle').value,
+                description: document.getElementById('ticketDescription').value,
+                priority: document.getElementById('ticketPriority').value,
+                assigneeId: document.getElementById('ticketAssigneeId').value || null,
+                photos: [] // Фотографии обрабатываются отдельно
+            };
+            
+            try {
+                // Сначала загружаем фотографии (только онлайн)
+                const photoInput = document.getElementById('ticketPhotos');
+                const photoFiles = Array.from(photoInput.files).slice(0, 5);
+                let uploadedPhotos = [];
+                
+                if (photoFiles.length > 0 && isOnline) {
+                    const formData = new FormData();
+                    photoFiles.forEach(file => {
+                        formData.append('files', file);
+                    });
+                    
+                    const uploadResponse = await fetch(`${API_BASE}/files/upload`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` },
+                        body: formData
+                    });
+                    
+                    const uploadText = await uploadResponse.text();
+                    let uploadData = {};
+                    try {
+                        uploadData = uploadText ? JSON.parse(uploadText) : {};
+                    } catch (e) {
+                        // Игнорируем ошибки парсинга
+                    }
+                    
+                    if (uploadResponse.ok && uploadData.files) {
+                        uploadedPhotos = uploadData.files;
+                    } else {
+                        const errorMsg = uploadData.error || `HTTP ${uploadResponse.status}`;
+                        showResult(resultDiv, `❌ Ошибка загрузки фотографий: ${errorMsg}`, 'error');
+                        return;
+                    }
+                }
+                
+                ticketData.photos = uploadedPhotos;
+                
+                // Создаем заявку
+                if (isOnline) {
+                    const response = await fetch(`${API_BASE}/tickets`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify(ticketData)
+                    });
+                    
+                    const text = await response.text();
+                    let data = {};
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (e) {
+                        showResult(resultDiv, `Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}`, 'error');
+                        return;
+                    }
+                    
+                    if (response.ok) {
+                        showResult(resultDiv, `✅ Заявка создана! ID: ${data.id}`, 'success');
+                        showNotification('✅ Заявка создана', {
+                            body: ticketData.title
+                        });
+                        document.getElementById('createTicketForm').reset();
+                        document.getElementById('photoPreview').innerHTML = '';
+                        loadTickets();
+                    } else {
+                        const errorMsg = data.error || data.details || `HTTP ${response.status}`;
+                        showResult(resultDiv, `❌ Ошибка: ${errorMsg}`, 'error');
+                    }
+                } else {
+                    // Офлайн-режим: сохраняем операцию для синхронизации
+                    await savePendingOperation({
+                        type: 'create_ticket',
+                        data: ticketData
+                    });
+                    
+                    showResult(resultDiv, `⏳ Заявка сохранена для синхронизации. Будет создана при восстановлении соединения.`, 'success');
+                    showNotification('⏳ Заявка сохранена офлайн', {
+                        body: ticketData.title
+                    });
+                    document.getElementById('createTicketForm').reset();
+                    document.getElementById('photoPreview').innerHTML = '';
+                }
+            } catch (error) {
+                showResult(resultDiv, `❌ Ошибка: ${error.message}`, 'error');
+            }
+        });
+        
+        // Модифицируем acceptTicket для офлайн-режима
+        const originalAcceptTicket = acceptTicket;
+        acceptTicket = async function(ticketId, estimatedCompletionTime = null) {
+            if (!ticketId) {
+                alert('❌ Ошибка: ID заявки не указан');
+                return;
+            }
+            
+            if (!isOnline) {
+                // Сохраняем операцию для синхронизации
+                await savePendingOperation({
+                    type: 'accept_ticket',
+                    ticketId: ticketId,
+                    data: { estimatedCompletionTime }
+                });
+                
+                alert('⏳ Заявка сохранена для синхронизации. Будет принята при восстановлении соединения.');
+                showNotification('⏳ Заявка сохранена офлайн', {
+                    body: 'Будет принята при восстановлении соединения'
+                });
+                return;
+            }
+            
+            originalAcceptTicket(ticketId, estimatedCompletionTime);
+        };
+        
+        // Модифицируем completeTicket для офлайн-режима
+        const originalCompleteTicket = completeTicket;
+        completeTicket = async function(ticketId, comments = null) {
+            if (!isOnline) {
+                // Сохраняем операцию для синхронизации
+                await savePendingOperation({
+                    type: 'complete_ticket',
+                    ticketId: ticketId,
+                    data: { comments }
+                });
+                
+                alert('⏳ Заявка сохранена для синхронизации. Будет завершена при восстановлении соединения.');
+                showNotification('⏳ Заявка сохранена офлайн', {
+                    body: 'Будет завершена при восстановлении соединения'
+                });
+                return;
+            }
+            
+            originalCompleteTicket(ticketId, comments);
+        };
+        
+        // Модифицируем assignTicket для офлайн-режима
+        const originalAssignTicket = assignTicket;
+        assignTicket = async function(ticketId, technicianId) {
+            if (!ticketId || !technicianId) {
+                alert('❌ Ошибка: ID заявки или техника не указаны');
+                return;
+            }
+            
+            if (!isOnline) {
+                // Сохраняем операцию для синхронизации
+                await savePendingOperation({
+                    type: 'assign_ticket',
+                    ticketId: ticketId,
+                    data: { technicianId }
+                });
+                
+                alert('⏳ Назначение сохранено для синхронизации. Будет выполнено при восстановлении соединения.');
+                showNotification('⏳ Назначение сохранено офлайн', {
+                    body: 'Будет выполнено при восстановлении соединения'
+                });
+                return;
+            }
+            
+            originalAssignTicket(ticketId, technicianId);
+        };
+        
+        // Инициализация при загрузке страницы
+        if (authToken) {
+            initDB().then(() => {
+                if (currentUser) {
+                    startTicketsMonitoring();
+                }
+            });
+        }
+        
+        // ==================== ТЕСТИРОВАНИЕ СИСТЕМЫ (для администратора) ====================
+        
+        const TEST_USERS = {
+            manager: { login: 'Петрова В.В.', password: 'petrow' },
+            technician: { login: 'Ананьев М.О.', password: '123456' },
+            admin: { login: 'Богданов Е.И.', password: 'qerTY123' }
+        };
+        
+        let testAuthTokens = {};
+        let testResults = [];
+        
+        // Описания тестов
+        const TEST_DESCRIPTIONS = {
+            'Health Check': 'Проверка доступности сервера. Проверяет, что сервер запущен и отвечает на запросы.',
+            'Авторизация (manager)': 'Проверка входа в систему под ролью руководителя. Проверяет работу службы аутентификации и выдачи токенов доступа.',
+            'Авторизация (technician)': 'Проверка входа в систему под ролью техника. Проверяет корректность работы авторизации для разных ролей.',
+            'Загрузка пользователей': 'Проверка получения списка всех пользователей системы. Проверяет работу службы управления пользователями и права доступа.',
+            'Загрузка заявок': 'Проверка получения списка заявок. Проверяет работу службы управления заявками и фильтрацию по ролям.',
+            'Создание заявки': 'Проверка создания новой заявки. Проверяет работу службы создания заявок, валидацию данных и сохранение в базе данных.',
+            'Назначение техника': 'Проверка назначения техника на заявку. Проверяет работу службы назначения, права доступа руководителей и обновление статуса заявки.',
+            'Принятие заявки': 'Проверка принятия заявки техником. Проверяет работу службы принятия заявок, установку времени выполнения и изменение статуса.',
+            'Завершение заявки': 'Проверка завершения заявки с комментариями. Проверяет работу службы завершения заявок, сохранение комментариев и финальный статус.',
+            'Экспорт PDF': 'Проверка генерации PDF отчёта. Проверяет работу службы экспорта, формирование отчёта за выбранный период и корректность данных.',
+            'Поддержка IndexedDB': 'Проверка поддержки локального хранилища данных браузером. Необходимо для работы офлайн-режима.',
+            'Поддержка Service Worker': 'Проверка поддержки Service Worker браузером. Необходимо для кэширования и работы приложения без интернета.',
+            'Поддержка уведомлений': 'Проверка поддержки браузерных уведомлений. Необходимо для отправки уведомлений о новых заявках и событиях.'
+        };
+        
+        async function fetchTestAPI(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(options.token ? { 'Authorization': `Bearer ${options.token}` } : {}),
+                        ...(options.headers || {})
+                    }
+                });
+                
+                const text = await response.text();
+                let data = {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    data = { error: 'Invalid JSON', text };
+                }
+                
+                return { response, data };
+            } catch (error) {
+                return { response: null, data: { error: error.message } };
+            }
+        }
+        
+        function addTestResult(name, passed, message = '') {
+            testResults.push({ name, passed, message, time: new Date() });
+            const resultsDiv = document.getElementById('testResults');
+            if (!resultsDiv) return;
+            
+            const description = TEST_DESCRIPTIONS[name] || '';
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${passed ? 'passed' : 'failed'}`;
+            resultDiv.style.cssText = `
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 8px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                ${passed ? 
+                    'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;' : 
+                    'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;'}
+            `;
+            resultDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">${passed ? '✅' : '❌'}</span>
+                    <span style="font-weight: 600; font-size: 16px;">${name}</span>
+                    ${message ? `<span style="margin-left: auto; font-size: 14px;">${message}</span>` : ''}
+                </div>
+                ${description ? `<div style="font-size: 13px; color: ${passed ? '#155724' : '#721c24'}; opacity: 0.8; margin-left: 30px;">💡 ${description}</div>` : ''}
+            `;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        async function testHealthCheck() {
+            addTestResult('Health Check', true, 'Проверка...');
+            try {
+                const healthUrl = FILE_BASE.replace('/api/v1', '') + '/health';
+                const response = await fetch(healthUrl);
+                const passed = response.ok || response.status === 200;
+                addTestResult('Health Check', passed, passed ? 'Сервер работает' : `Статус: ${response.status}`);
+                return passed;
+            } catch (error) {
+                addTestResult('Health Check', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testLogin(userType) {
+            const user = TEST_USERS[userType];
+            addTestResult(`Авторизация (${userType})`, true, 'Проверка...');
+            
+            try {
+                const { response, data } = await fetchTestAPI(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    body: JSON.stringify(user)
+                });
+                
+                if (response?.ok && data.accessToken) {
+                    testAuthTokens[userType] = data.accessToken;
+                    addTestResult(`Авторизация (${userType})`, true, `Пользователь: ${data.user.name}`);
+                    return true;
+                } else {
+                    addTestResult(`Авторизация (${userType})`, false, data.error || 'Ошибка авторизации');
+                    return false;
+                }
+            } catch (error) {
+                addTestResult(`Авторизация (${userType})`, false, error.message);
+                return false;
+            }
+        }
+        
+        async function testLoadTickets() {
+            if (!testAuthTokens.manager) {
+                addTestResult('Загрузка заявок', false, 'Нет токена авторизации');
+                return false;
+            }
+            
+            addTestResult('Загрузка заявок', true, 'Проверка...');
+            try {
+                const { response, data } = await fetchTestAPI(`${API_BASE}/tickets`, {
+                    token: testAuthTokens.manager
+                });
+                
+                const passed = response?.ok === true && Array.isArray(data.items);
+                addTestResult('Загрузка заявок', passed, 
+                    passed ? `Найдено заявок: ${data.items.length}` : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Загрузка заявок', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testLoadUsers() {
+            if (!testAuthTokens.manager) {
+                addTestResult('Загрузка пользователей', false, 'Нет токена авторизации');
+                return false;
+            }
+            
+            addTestResult('Загрузка пользователей', true, 'Проверка...');
+            try {
+                const { response, data } = await fetchTestAPI(`${API_BASE}/users`, {
+                    token: testAuthTokens.manager
+                });
+                
+                const passed = response?.ok === true && Array.isArray(data.items);
+                addTestResult('Загрузка пользователей', passed,
+                    passed ? `Найдено пользователей: ${data.items.length}` : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Загрузка пользователей', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testCreateTicket() {
+            if (!testAuthTokens.manager) {
+                addTestResult('Создание заявки', false, 'Нет токена авторизации');
+                return null;
+            }
+            
+            addTestResult('Создание заявки', true, 'Проверка...');
+            try {
+                const ticketData = {
+                    title: `Тестовая заявка ${Date.now()}`,
+                    description: 'Это тестовая заявка для проверки функциональности',
+                    priority: 'MEDIUM'
+                };
+                
+                const { response, data } = await fetchTestAPI(`${API_BASE}/tickets`, {
+                    method: 'POST',
+                    token: testAuthTokens.manager,
+                    body: JSON.stringify(ticketData)
+                });
+                
+                if (response?.ok && data.id) {
+                    addTestResult('Создание заявки', true, `ID: ${data.id}`);
+                    return data.id;
+                } else {
+                    addTestResult('Создание заявки', false, data.error || 'Ошибка создания');
+                    return null;
+                }
+            } catch (error) {
+                addTestResult('Создание заявки', false, error.message);
+                return null;
+            }
+        }
+        
+        async function testAssignTicket(ticketId) {
+            if (!ticketId) {
+                addTestResult('Назначение техника', false, 'Нет ID заявки');
+                return false;
+            }
+            
+            if (!testAuthTokens.manager) {
+                addTestResult('Назначение техника', false, 'Нет токена менеджера');
+                return false;
+            }
+            
+            addTestResult('Назначение техника', true, 'Проверка...');
+            try {
+                const { response: usersResp, data: usersData } = await fetchTestAPI(`${API_BASE}/users`, {
+                    token: testAuthTokens.manager
+                });
+                
+                if (!usersResp?.ok || !Array.isArray(usersData.items)) {
+                    addTestResult('Назначение техника', false, 'Не удалось загрузить техников');
+                    return false;
+                }
+                
+                const technician = usersData.items.find(u => u.role === 'TECHNICIAN');
+                if (!technician) {
+                    addTestResult('Назначение техника', false, 'Нет доступных техников');
+                    return false;
+                }
+                
+                const { response, data } = await fetchTestAPI(`${API_BASE}/tickets/${ticketId}/assign`, {
+                    method: 'PUT',
+                    token: testAuthTokens.manager,
+                    body: JSON.stringify({ technicianId: technician.id })
+                });
+                
+                const passed = response?.ok === true;
+                addTestResult('Назначение техника', passed,
+                    passed ? `Назначен: ${technician.name}` : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Назначение техника', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testAcceptTicket(ticketId) {
+            if (!ticketId) {
+                addTestResult('Принятие заявки', false, 'Нет ID заявки');
+                return false;
+            }
+            
+            if (!testAuthTokens.technician) {
+                const loggedIn = await testLogin('technician');
+                if (!loggedIn) return false;
+            }
+            
+            addTestResult('Принятие заявки', true, 'Проверка...');
+            try {
+                const { response, data } = await fetchTestAPI(`${API_BASE}/tickets/${ticketId}/accept`, {
+                    method: 'PUT',
+                    token: testAuthTokens.technician,
+                    body: JSON.stringify({ estimatedCompletionTime: Math.floor(Date.now() / 1000) + 3600 })
+                });
+                
+                const passed = response?.ok === true;
+                addTestResult('Принятие заявки', passed,
+                    passed ? 'Заявка принята' : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Принятие заявки', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testCompleteTicket(ticketId) {
+            if (!ticketId) {
+                addTestResult('Завершение заявки', false, 'Нет ID заявки');
+                return false;
+            }
+            
+            if (!testAuthTokens.technician) {
+                addTestResult('Завершение заявки', false, 'Нет токена техника');
+                return false;
+            }
+            
+            addTestResult('Завершение заявки', true, 'Проверка...');
+            try {
+                const { response, data } = await fetchTestAPI(`${API_BASE}/tickets/${ticketId}/complete`, {
+                    method: 'PUT',
+                    token: testAuthTokens.technician,
+                    body: JSON.stringify({ comments: 'Тестовое завершение заявки' })
+                });
+                
+                const passed = response?.ok === true;
+                addTestResult('Завершение заявки', passed,
+                    passed ? 'Заявка завершена' : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Завершение заявки', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testPDFExport() {
+            if (!testAuthTokens.manager) {
+                addTestResult('Экспорт PDF', false, 'Нет токена авторизации');
+                return false;
+            }
+            
+            addTestResult('Экспорт PDF', true, 'Проверка...');
+            try {
+                const response = await fetch(`${API_BASE}/tickets/export/pdf?period=day`, {
+                    headers: { 'Authorization': `Bearer ${testAuthTokens.manager}` }
+                });
+                
+                const passed = response.ok && response.headers.get('content-type')?.includes('pdf');
+                addTestResult('Экспорт PDF', passed, passed ? 'PDF создан' : `Статус: ${response.status}`);
+                return passed;
+            } catch (error) {
+                addTestResult('Экспорт PDF', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testOfflineSupport() {
+            const hasIndexedDB = typeof indexedDB !== 'undefined';
+            const hasServiceWorker = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
+            const hasNotifications = typeof Notification !== 'undefined';
+            
+            addTestResult('Поддержка IndexedDB', hasIndexedDB, hasIndexedDB ? 'Доступна' : 'Недоступна');
+            addTestResult('Поддержка Service Worker', hasServiceWorker, hasServiceWorker ? 'Доступна' : 'Недоступна');
+            addTestResult('Поддержка уведомлений', hasNotifications, hasNotifications ? 'Доступна' : 'Недоступна');
+            
+            return hasIndexedDB && hasServiceWorker && hasNotifications;
+        }
+        
+        async function runAllTests() {
+            const resultsDiv = document.getElementById('testResults');
+            const summaryDiv = document.getElementById('testSummary');
+            if (!resultsDiv || !summaryDiv) return;
+            
+            resultsDiv.innerHTML = '';
+            summaryDiv.style.display = 'none';
+            testResults = [];
+            testAuthTokens = {};
+            
+            // Проверка сервера
+            await testHealthCheck();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Авторизация
+            await testLogin('manager');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Основные тесты
+            await testLoadUsers();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testLoadTickets();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Тест создания заявки
+            const ticketId = await testCreateTicket();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Тест назначения техника
+            if (ticketId) {
+                await testAssignTicket(ticketId);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Тест принятия заявки (создаем новую)
+            const newTicketId = await testCreateTicket();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            if (newTicketId) {
+                await testAcceptTicket(newTicketId);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Тест завершения заявки
+            if (newTicketId) {
+                await testCompleteTicket(newTicketId);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Тест экспорта PDF
+            await testPDFExport();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Тесты поддержки офлайн-режима
+            await testOfflineSupport();
+            
+            // Итоги
+            const passed = testResults.filter(r => r.passed).length;
+            const failed = testResults.filter(r => !r.passed).length;
+            const total = testResults.length;
+            const successRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+            
+            summaryDiv.style.display = 'block';
+            summaryDiv.innerHTML = `
+                <h3 style="margin-top: 0; color: #2196F3;">📊 Итоги тестирования</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div>
+                        <strong>Всего тестов:</strong> ${total}
+                    </div>
+                    <div style="color: #155724;">
+                        <strong>✅ Успешно:</strong> ${passed}
+                    </div>
+                    <div style="color: #721c24;">
+                        <strong>❌ Ошибок:</strong> ${failed}
+                    </div>
+                    <div>
+                        <strong>📈 Успешность:</strong> ${successRate}%
+                    </div>
+                </div>
+            `;
+        }
+        
+        function clearTestResults() {
+            const resultsDiv = document.getElementById('testResults');
+            const summaryDiv = document.getElementById('testSummary');
+            if (resultsDiv) resultsDiv.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Нажмите "Запустить все тесты" для проверки системы</p>';
+            if (summaryDiv) summaryDiv.style.display = 'none';
+            testResults = [];
+            testAuthTokens = {};
+        }
+    </script>
+</body>
+</html>
+
