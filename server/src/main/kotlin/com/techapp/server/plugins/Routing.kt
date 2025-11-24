@@ -16,6 +16,7 @@ import io.ktor.server.routing.routing
 import io.ktor.server.routing.route
 import io.ktor.server.routing.get
 import io.ktor.server.response.respondFile
+import io.ktor.server.application.call
 import java.io.File
 
 fun Application.configureRouting() {
