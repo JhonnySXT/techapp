@@ -27,8 +27,8 @@ build/
 !gradle/
 !gradlew
 !gradlew.bat
-!build.gradle.kts
-!settings.gradle.kts
-!gradle.properties
+# НЕ копируем корневой build.gradle.kts (содержит Android-плагины)
+# НЕ копируем settings.gradle.kts (создадим свой без Android)
+# НЕ копируем gradle.properties (создадим свой)
 !server/
 
