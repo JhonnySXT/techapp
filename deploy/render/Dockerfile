@@ -18,12 +18,14 @@ COPY gradle.properties ./
 # Копируем только server модуль
 COPY server/build.gradle.kts ./server/
 COPY server/src/ ./server/src/
+# Копируем resources (application.conf)
+COPY server/src/main/resources/ ./server/src/main/resources/
 
 # Даем права на выполнение gradlew
 RUN chmod +x ./gradlew
 
-# Собираем JAR файл
-RUN ./gradlew :server:shadowJar --no-daemon
+# Собираем JAR файл с подробными логами
+RUN ./gradlew :server:shadowJar --no-daemon --stacktrace
 
 # Финальный образ с JRE
 FROM eclipse-temurin:17-jre-alpine
