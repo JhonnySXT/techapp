@@ -10,14 +10,18 @@ WORKDIR /app
 # Копируем только файлы, необходимые для сборки
 COPY gradle/ ./gradle/
 COPY build.gradle.kts ./
-COPY settings.gradle.kts ./
-COPY gradle.properties ./
+
+# Создаем упрощенный settings.gradle.kts только для server модуля (без Android)
+RUN echo 'pluginManagement {\n  repositories {\n    mavenCentral()\n    gradlePluginPortal()\n  }\n}\nrootProject.name = "Techapp"\ninclude(":server")' > settings.gradle.kts
+
+# Создаем gradle.properties без Windows-специфичных настроек
+RUN echo 'org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8' > gradle.properties
 
 # Копируем только server модуль
 COPY server/build.gradle.kts ./server/
 COPY server/src/ ./server/src/
 
-# Используем встроенный Gradle из образа (не нужен gradlew)
+# Используем встроенный Gradle из образа
 # Собираем JAR файл с подробными логами
 RUN gradle :server:shadowJar --no-daemon --stacktrace
 
