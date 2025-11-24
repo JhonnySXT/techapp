@@ -128,7 +128,7 @@ object TicketService {
                 }
                 TicketStatus.ASSIGNED.name -> {
                     // Проверяем, что заявка назначена именно этому технику
-                    if (currentAssignee == null || currentAssignee != techUuid) {
+                    if (currentAssignee == null || currentAssignee.value != techUuid) {
                         // Заявка назначена другому технику или не назначена
                         return@transaction null
                     }
