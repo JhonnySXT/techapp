@@ -52,12 +52,63 @@ EOF
 COPY server/build.gradle.kts ./server/
 COPY server/src/ ./server/src/
 
-# Копируем статические файлы фронтенда (для PWA)
-COPY test-app.html ./
-COPY config.js ./
-COPY manifest.json ./
-COPY sw.js ./
-COPY icon-*.png ./
+# Создаем статические файлы фронтенда (для PWA) прямо в образе
+# Это гарантирует, что файлы всегда будут доступны
+
+# Создаем config.js
+RUN cat > config.js << 'EOF'
+// config.js
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocalhost ? 'http://localhost:8081/api/v1' : window.location.origin + '/api/v1';
+const FILE_BASE = isLocalhost ? 'http://localhost:8081' : window.location.origin;
+if (typeof self !== 'undefined') {
+    self.API_BASE = API_BASE;
+    self.FILE_BASE = FILE_BASE;
+}
+EOF
+
+# Создаем manifest.json
+RUN cat > manifest.json << 'EOF'
+{
+  "name": "Загородный клуб 'Дача'",
+  "short_name": "Дача",
+  "description": "Приложение для управления заявками в загородном клубе 'Дача'",
+  "start_url": "/test-app.html",
+  "display": "standalone",
+  "background_color": "#2d5016",
+  "theme_color": "#2d5016",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+EOF
+
+# Создаем sw.js (Service Worker) - базовая версия
+RUN cat > sw.js << 'EOF'
+const CACHE_NAME = 'techapp-cache-v1';
+self.addEventListener('install', (event) => {
+    event.waitUntil(caches.open(CACHE_NAME).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
+});
+self.addEventListener('fetch', (event) => {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+});
+EOF
+
+# Копируем test-app.html и иконки (если есть в репозитории)
+COPY test-app.html* ./
+COPY icon-*.png* ./
 
 # Используем встроенный Gradle из образа
 # Сначала проверяем структуру проекта
@@ -84,11 +135,13 @@ WORKDIR /app
 COPY --from=build /app/server/build/libs/server-all.jar app.jar
 
 # Копируем статические файлы фронтенда из стадии сборки
-COPY --from=build /app/test-app.html ./
+# Файлы config.js, manifest.json и sw.js уже созданы в стадии build через RUN cat
 COPY --from=build /app/config.js ./
 COPY --from=build /app/manifest.json ./
 COPY --from=build /app/sw.js ./
-COPY --from=build /app/icon-*.png ./
+# test-app.html и иконки копируем, если есть
+COPY --from=build /app/test-app.html* ./
+COPY --from=build /app/icon-*.png* ./
 
 # Создаем директорию для данных (база данных SQLite)
 RUN mkdir -p /app/data
