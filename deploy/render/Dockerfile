@@ -106,9 +106,20 @@ self.addEventListener('fetch', (event) => {
 });
 EOF
 
-# Копируем test-app.html и иконки (если есть в репозитории)
-COPY test-app.html* ./
-COPY icon-*.png* ./
+# Копируем test-app.html и иконки
+# Файл должен быть в репозитории
+COPY test-app.html ./
+COPY icon-*.png ./ 2>/dev/null || true
+
+# Если test-app.html не скопировался, создадим минимальную версию для теста
+RUN if [ ! -f test-app.html ]; then \
+    echo "Creating minimal test-app.html"; \
+    cat > test-app.html << 'EOF' \
+    && echo '<!DOCTYPE html>' \
+    && echo '<html><head><meta charset="UTF-8"><title>Techapp</title></head>' \
+    && echo '<body><h1>Приложение загружается...</h1><p>test-app.html не найден в репозитории</p></body></html>' \
+    EOF; \
+    fi
 
 # Используем встроенный Gradle из образа
 # Сначала проверяем структуру проекта
@@ -139,9 +150,9 @@ COPY --from=build /app/server/build/libs/server-all.jar app.jar
 COPY --from=build /app/config.js ./
 COPY --from=build /app/manifest.json ./
 COPY --from=build /app/sw.js ./
-# test-app.html и иконки копируем, если есть
-COPY --from=build /app/test-app.html* ./
-COPY --from=build /app/icon-*.png* ./
+# test-app.html и иконки копируем из стадии build
+COPY --from=build /app/test-app.html ./
+COPY --from=build /app/icon-*.png ./ 2>/dev/null || true
 
 # Создаем директорию для данных (база данных SQLite)
 RUN mkdir -p /app/data
