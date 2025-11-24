@@ -1,0 +1,182 @@
+:root {
+  color-scheme: light dark;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e2e8f0;
+  --accent: #38bdf8;
+  --accent-dark: #0284c7;
+  --danger: #f87171;
+  --ghost: #475569;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+}
+
+.container {
+  width: min(640px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.6);
+}
+
+h1,
+h2 {
+  margin: 0 0 0.5rem;
+}
+
+form,
+.goal-form {
+  display: grid;
+  gap: 1rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  border-radius: 10px;
+  border: none;
+  padding: 0.75rem 1rem;
+  background: #0f172a;
+  color: var(--text);
+  outline: 2px solid transparent;
+  transition: outline 0.2s ease;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid var(--accent);
+}
+
+button {
+  cursor: pointer;
+  background: var(--accent);
+  color: #041423;
+  font-weight: 600;
+}
+
+button:hover {
+  background: var(--accent-dark);
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--ghost);
+  outline: none;
+  font-size: 1.5rem;
+  padding: 0.2rem 0.6rem;
+}
+
+button.ghost:hover {
+  color: var(--accent);
+}
+
+button.danger {
+  background: var(--danger);
+  color: #2f0606;
+}
+
+.progress {
+  margin: 1rem 0;
+  background: #0f172a;
+  border-radius: 999px;
+  height: 14px;
+  overflow: hidden;
+}
+
+.progress__bar {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent), #22d3ee);
+  transition: width 0.3s ease;
+}
+
+.entry-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 1rem 0 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #0f172a;
+}
+
+.entry__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.entry__category {
+  color: var(--ghost);
+}
+
+.entry__calories {
+  font-weight: 700;
+  margin-right: 0.5rem;
+}
+
+.entry__right {
+  display: flex;
+  align-items: center;
+}
+
+.text-danger {
+  color: var(--danger);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #0f172a;
+    --ghost: #94a3b8;
+  }
+
+  input,
+  select {
+    background: #f8fafc;
+    color: #0f172a;
+  }
+
+  .entry {
+    background: #f8fafc;
+  }
+
+  button.ghost {
+    color: #94a3b8;
+  }
+}
+

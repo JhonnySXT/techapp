@@ -1,0 +1,25 @@
+# Игнорируем ненужные файлы при сборке Docker образа
+.git
+.gitignore
+README.md
+*.md
+.idea
+.vscode
+*.iml
+build/
+.gradle
+local.properties
+*.log
+.DS_Store
+Thumbs.db
+
+# Игнорируем другие модули
+app/
+calorie-app/
+org-chat-agent/
+scripts/
+docs/
+
+# Оставляем только server модуль
+!server/
+

@@ -1,0 +1,2263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загородный клуб "Дача" - Тестовый интерфейс</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            /* Естественный лесной фон - темно-зеленый */
+            background: linear-gradient(135deg, #2d5016 0%, #1a3d0f 50%, #23301a 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            /* Мягкие световые пятна для глубины */
+            background: 
+                radial-gradient(ellipse 1200px 900px at 20% 30%, rgba(76, 175, 80, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse 900px 1200px at 80% 70%, rgba(56, 142, 60, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        
+        /* Дополнительные декоративные элементы - убраны для более естественного вида */
+        
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Улучшенные инпуты в лесном стиле */
+        input, select, textarea {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            transition: all 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            border-color: #4a7c2a;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+            outline: none;
+        }
+        
+        .header {
+            background: 
+                linear-gradient(135deg, rgba(139, 195, 74, 0.15) 0%, rgba(76, 175, 80, 0.15) 100%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><defs><pattern id="wood" patternUnits="userSpaceOnUse" width="20" height="20"><rect width="20" height="20" fill="%23f5f5dc"/><line x1="0" y1="10" x2="20" y2="10" stroke="%23d4a574" stroke-width="0.5" opacity="0.3"/><line x1="10" y1="0" x2="10" y2="20" stroke="%23d4a574" stroke-width="0.5" opacity="0.2"/></pattern></defs><rect width="100" height="100" fill="url(%23wood)"/></svg>');
+            background-size: cover, 40px 40px;
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 
+                0 4px 20px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.2),
+                0 0 0 2px rgba(76, 175, 80, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid rgba(76, 175, 80, 0.4);
+            position: relative;
+            overflow: visible;
+            z-index: 100;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            /* Мягкая текстура для header */
+            background: 
+                linear-gradient(135deg, 
+                    rgba(139, 195, 74, 0.02) 0%, 
+                    transparent 50%,
+                    rgba(76, 175, 80, 0.02) 100%
+                );
+            border-radius: 15px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .header h1 {
+            color: #2d5016;
+            margin-bottom: 10px;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+        
+        /* Индикатор статуса подключения */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+        }
+        
+        .connection-status.online {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.4);
+            color: #4caf50;
+        }
+        
+        .connection-status.offline {
+            background: rgba(211, 47, 47, 0.2);
+            border-color: rgba(211, 47, 47, 0.4);
+            color: #d32f2f;
+        }
+        
+        .connection-status.syncing {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.4);
+            color: #ffc107;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.online {
+            background: #4caf50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+        }
+        
+        .status-dot.offline {
+            background: #d32f2f;
+            box-shadow: 0 0 8px rgba(211, 47, 47, 0.6);
+        }
+        
+        .status-dot.syncing {
+            background: #ffc107;
+            box-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+            z-index: 1000;
+        }
+        
+        .user-info {
+            color: #4a7c2a;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .logout-btn {
+            padding: 10px 20px;
+            background: #d32f2f;
+            color: white;
+            border: 2px solid #b71c1c;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 3px 6px rgba(211, 47, 47, 0.3);
+            position: relative;
+            z-index: 1001;
+            min-width: 100px;
+            min-height: 40px;
+        }
+        
+        .logout-btn:hover {
+            background: #b71c1c;
+            border-color: #8b0000;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(211, 47, 47, 0.4);
+        }
+        
+        .logout-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: 
+                linear-gradient(135deg, rgba(245, 245, 220, 0.95) 0%, rgba(250, 250, 230, 0.95) 100%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><defs><pattern id="bark" patternUnits="userSpaceOnUse" width="40" height="40"><rect width="40" height="40" fill="%23f5f5dc"/><line x1="0" y1="20" x2="40" y2="20" stroke="%23d4a574" stroke-width="1" opacity="0.2"/><line x1="20" y1="0" x2="20" y2="40" stroke="%23d4a574" stroke-width="0.5" opacity="0.15"/></pattern></defs><rect width="40" height="40" fill="url(%23bark)"/></svg>');
+            background-size: cover, 80px 80px;
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 
+                0 4px 20px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.2),
+                0 0 0 2px rgba(76, 175, 80, 0.2);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: #e8f5e9;
+            border: 2px solid #4a7c2a;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: #2d5016;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .tab.active {
+            background: #4a7c2a;
+            color: white;
+            border-color: #2d5016;
+            box-shadow: 0 4px 8px rgba(74, 124, 42, 0.4);
+        }
+        
+        .tab:hover {
+            background: #6b9f4a;
+            color: white;
+            border-color: #4a7c2a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .tab-content {
+            display: none;
+            background: 
+                linear-gradient(135deg, rgba(245, 245, 220, 0.95) 0%, rgba(250, 250, 230, 0.95) 100%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><defs><pattern id="leaves" patternUnits="userSpaceOnUse" width="60" height="60"><circle cx="15" cy="45" r="8" fill="%234a7c2a" opacity="0.08"/><circle cx="45" cy="15" r="6" fill="%236b9f4a" opacity="0.08"/><ellipse cx="30" cy="30" rx="10" ry="6" fill="%232d5016" opacity="0.06"/></pattern></defs><rect width="60" height="60" fill="url(%23leaves)"/></svg>');
+            background-size: cover, 120px 120px;
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 
+                0 4px 20px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.3),
+                0 0 0 2px rgba(76, 175, 80, 0.2);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            position: relative;
+        }
+        
+        .tab-content::before {
+            content: '🍯';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 30px;
+            opacity: 0.15;
+            animation: honeyDrip 3s ease-in-out infinite;
+        }
+        
+        @keyframes honeyDrip {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(5px) rotate(5deg); }
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        input[type="file"] {
+            padding: 8px;
+            cursor: pointer;
+        }
+        
+        #photoPreview img {
+            transition: transform 0.2s;
+        }
+        
+        #photoPreview img:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: #4a7c2a;
+            color: white;
+            border: 2px solid #2d5016;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+        
+        button:hover {
+            background: #6b9f4a;
+            border-color: #4a7c2a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .list-item {
+            background: 
+                linear-gradient(135deg, rgba(241, 248, 233, 0.95) 0%, rgba(232, 245, 233, 0.95) 100%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><circle cx="15" cy="15" r="8" fill="%234a7c2a" opacity="0.05"/></svg>');
+            background-size: cover, 60px 60px;
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 5px solid #4a7c2a;
+            box-shadow: 
+                0 2px 8px rgba(0,0,0,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.3);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+        
+        .list-item::before {
+            content: '🍃';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 16px;
+            opacity: 0.2;
+        }
+        
+        .list-item h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .list-item p {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .badge-admin { background: #d32f2f; color: white; }
+        .badge-manager { background: #f57c00; color: white; }
+        .badge-technician { background: #388e3c; color: white; }
+        .badge-new { background: #0288d1; color: white; }
+        .badge-assigned { background: #f57c00; color: white; }
+        .badge-in-progress { background: #fbc02d; color: #000; }
+        .badge-completed { background: #388e3c; color: white; }
+        .badge-cancelled { background: #616161; color: white; }
+        
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+            background: 
+                linear-gradient(135deg, rgba(245, 245, 220, 0.95) 0%, rgba(250, 250, 230, 0.95) 100%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><defs><pattern id="woodgrain" patternUnits="userSpaceOnUse" width="50" height="50"><rect width="50" height="50" fill="%23f5f5dc"/><path d="M0,25 Q25,20 50,25" stroke="%23d4a574" stroke-width="0.5" fill="none" opacity="0.2"/><path d="M0,30 Q25,35 50,30" stroke="%23d4a574" stroke-width="0.5" fill="none" opacity="0.15"/></pattern></defs><rect width="50" height="50" fill="url(%23woodgrain)"/></svg>');
+            background-size: cover, 100px 100px;
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 
+                0 4px 20px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.3),
+                0 0 0 2px rgba(76, 175, 80, 0.3);
+            border: 2px solid rgba(76, 175, 80, 0.4);
+            position: relative;
+        }
+        
+        .login-form::after {
+            content: '🌿';
+            position: absolute;
+            bottom: -15px;
+            left: 20px;
+            font-size: 40px;
+            opacity: 0.2;
+            transform: rotate(-15deg);
+        }
+        
+        .login-form h2 {
+            color: #2d5016;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border: 2px solid;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .btn-success { 
+            background: #28a745; 
+            border-color: #1e7e34;
+            color: white;
+        }
+        .btn-success:hover { 
+            background: #218838; 
+            border-color: #1c7430;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+        
+        .btn-danger { 
+            background: #dc3545; 
+            border-color: #c82333;
+            color: white;
+        }
+        .btn-danger:hover { 
+            background: #c82333; 
+            border-color: #bd2130;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+        
+        .badge-director {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .badge-busy {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #d32f2f;
+        }
+        
+        .badge-free {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        
+        /* Модальное окно */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: 
+                linear-gradient(135deg, rgba(245, 245, 220, 0.98) 0%, rgba(250, 250, 230, 0.98) 100%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><defs><pattern id="woodgrain" patternUnits="userSpaceOnUse" width="50" height="50"><rect width="50" height="50" fill="%23f5f5dc"/><path d="M0,25 Q25,20 50,25" stroke="%23d4a574" stroke-width="0.5" fill="none" opacity="0.2"/><path d="M0,30 Q25,35 50,30" stroke="%23d4a574" stroke-width="0.5" fill="none" opacity="0.15"/></pattern></defs><rect width="50" height="50" fill="url(%23woodgrain)"/></svg>');
+            background-size: cover, 100px 100px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 
+                0 8px 32px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.3),
+                0 0 0 2px rgba(76, 175, 80, 0.4);
+            border: 2px solid rgba(76, 175, 80, 0.5);
+            min-width: 350px;
+            max-width: 500px;
+            position: relative;
+            z-index: 10001;
+        }
+        
+        .modal h3 {
+            color: #2d5016;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border: 2px solid;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 80px;
+        }
+        
+        .modal-btn-primary {
+            background: #4a7c2a;
+            color: white;
+            border-color: #2d5016;
+        }
+        
+        .modal-btn-primary:hover {
+            background: #6b9f4a;
+            border-color: #4a7c2a;
+            transform: translateY(-2px);
+        }
+        
+        .modal-btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border-color: #ccc;
+        }
+        
+        .modal-btn-secondary:hover {
+            background: #e0e0e0;
+            border-color: #bbb;
+        }
+        
+        .time-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .time-option {
+            padding: 12px;
+            background: #e8f5e9;
+            border: 2px solid #4a7c2a;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            color: #2d5016;
+            transition: all 0.3s;
+        }
+        
+        .time-option:hover {
+            background: #c8e6c9;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+        
+        .time-option.selected {
+            background: #4a7c2a;
+            color: white;
+            border-color: #2d5016;
+        }
+        
+        .modal textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            margin-top: 10px;
+        }
+        
+        /* Индикатор статуса подключения */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+        }
+        
+        .connection-status.online {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.4);
+            color: #4caf50;
+        }
+        
+        .connection-status.offline {
+            background: rgba(211, 47, 47, 0.2);
+            border-color: rgba(211, 47, 47, 0.4);
+            color: #d32f2f;
+        }
+        
+        .connection-status.syncing {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.4);
+            color: #ffc107;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.online {
+            background: #4caf50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+        }
+        
+        .status-dot.offline {
+            background: #d32f2f;
+            box-shadow: 0 0 8px rgba(211, 47, 47, 0.6);
+        }
+        
+        .status-dot.syncing {
+            background: #ffc107;
+            box-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" id="header">
+            <div>
+                <h1>🐻🌲 Techapp - Загородный клуб "Дача"</h1>
+                <div class="user-info" id="userInfo">Не авторизован</div>
+            </div>
+            <div class="header-right" id="headerRight" style="display: none;">
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-dot online" id="statusDot"></span>
+                    <span id="statusText">Онлайн</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">🚪 Выход</button>
+            </div>
+        </div>
+        
+        <!-- Модальное окно для времени выполнения -->
+        <div class="modal-overlay" id="timeModal">
+            <div class="modal">
+                <h3>⏱️ Укажите время выполнения</h3>
+                <div class="time-options" id="timeOptions">
+                    <div class="time-option" data-minutes="5">5 мин</div>
+                    <div class="time-option" data-minutes="10">10 мин</div>
+                    <div class="time-option" data-minutes="15">15 мин</div>
+                    <div class="time-option" data-minutes="30">30 мин</div>
+                    <div class="time-option" data-minutes="45">45 мин</div>
+                    <div class="time-option" data-minutes="60">1 час</div>
+                    <div class="time-option" data-minutes="90">1.5 часа</div>
+                    <div class="time-option" data-minutes="120">2 часа</div>
+                </div>
+                <p style="margin-top: 15px; color: #666; font-size: 14px; text-align: center;">
+                    💡 Выберите время или нажмите "ОК" без выбора
+                </p>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-secondary" onclick="closeTimeModal()">Отмена</button>
+                    <button class="modal-btn modal-btn-primary" onclick="confirmTime()">ОК</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Модальное окно для комментариев -->
+        <div class="modal-overlay" id="commentModal">
+            <div class="modal">
+                <h3>💬 Комментарии к выполненной работе</h3>
+                <textarea id="commentText" placeholder="Введите комментарии (необязательно)"></textarea>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-secondary" onclick="closeCommentModal()">Отмена</button>
+                    <button class="modal-btn modal-btn-primary" onclick="confirmComment()">ОК</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Модальное окно для просмотра заявки -->
+        <div class="modal-overlay" id="ticketViewModal">
+            <div class="modal" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 id="ticketViewTitle" style="margin: 0;">📋 Просмотр заявки</h3>
+                    <button onclick="closeTicketViewModal()" style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 18px; line-height: 1;">×</button>
+                </div>
+                <div id="ticketViewContent">
+                    <p>Загрузка...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Модальное окно для выбора техника -->
+        <div class="modal-overlay" id="assignTechnicianModal">
+            <div class="modal" style="max-width: 600px;">
+                <h3>👤 Выберите техника</h3>
+                <div id="technicianList" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                    <p style="text-align: center; color: #666;">Загрузка техников...</p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-secondary" onclick="closeAssignTechnicianModal()">Отмена</button>
+                </div>
+            </div>
+        </div>
+        
+        </div>
+        
+        <div id="loginSection" class="tab-content active">
+            <div class="login-form">
+                <h2>Вход в систему</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="login">Логин (Фамилия И.О.):</label>
+                        <input type="text" id="login" placeholder="Иванов В.В." required>
+                        <select id="savedUsers" style="margin-top: 10px; width: 100%;" onchange="selectSavedUser()">
+                            <option value="">-- Выберите сохранённого пользователя --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Пароль:</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="rememberUser" checked> Запомнить пользователя
+                        </label>
+                    </div>
+                    <button type="submit">Войти</button>
+                </form>
+                <div id="loginResult" class="result"></div>
+            </div>
+        </div>
+        
+        <div id="mainSection" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('profile')">👤 Личный кабинет</button>
+                <button class="tab" id="usersTabBtn" onclick="showTab('users')" style="display: none;">👥 Пользователи</button>
+                <button class="tab" onclick="showTab('tickets')">🎫 Заявки</button>
+                <button class="tab" id="createTicketTabBtn" onclick="showTab('createTicket')" style="display: none;">➕ Создать заявку</button>
+                <button class="tab" id="onlineEmployeesTabBtn" onclick="showTab('onlineEmployees')">👨‍💼 Сотрудники онлайн</button>
+            </div>
+            
+            <div id="profileTab" class="tab-content active">
+                <h2>👤 Личный кабинет</h2>
+                <div id="profileContent">
+                    <p>Загрузка...</p>
+                </div>
+            </div>
+            
+            <div id="usersTab" class="tab-content" style="display: none;">
+                <h2>Список пользователей</h2>
+                <button onclick="loadUsers()">Обновить список</button>
+                <div id="usersList"></div>
+                <div id="usersResult" class="result"></div>
+                
+                <h3 style="margin-top: 30px;">Создать пользователя</h3>
+                <form id="createUserForm">
+                    <div class="form-group">
+                        <label>Логин (Фамилия И.О.):</label>
+                        <input type="text" id="newUserName" placeholder="Иванов В.В." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Пароль:</label>
+                        <input type="password" id="newUserPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Роль:</label>
+                        <select id="newUserRole">
+                            <option value="ADMIN">Администратор</option>
+                            <option value="MANAGER">Руководитель</option>
+                            <option value="DIRECTOR">Директор</option>
+                            <option value="TECHNICIAN">Техник</option>
+                        </select>
+                    </div>
+                    <button type="submit">Создать пользователя</button>
+                </form>
+            </div>
+            
+            <div id="ticketsTab" class="tab-content">
+                <h2>Список заявок</h2>
+                <button onclick="loadTickets()">Обновить список</button>
+                <div id="ticketsList"></div>
+                <div id="ticketsResult" class="result"></div>
+            </div>
+            
+            <div id="createTicketTab" class="tab-content">
+                <h2>Создать заявку</h2>
+                <form id="createTicketForm">
+                    <div class="form-group">
+                        <label>Заголовок:</label>
+                        <input type="text" id="ticketTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Описание:</label>
+                        <textarea id="ticketDescription" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Приоритет:</label>
+                        <select id="ticketPriority">
+                            <option value="LOW">Низкий</option>
+                            <option value="MEDIUM" selected>Средний</option>
+                            <option value="HIGH">Высокий</option>
+                            <option value="CRITICAL">Критический</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Назначить техника (ID):</label>
+                        <input type="text" id="ticketAssigneeId" placeholder="Оставьте пустым для назначения позже">
+                    </div>
+                    <div class="form-group">
+                        <label>Фотографии (до 5 штук):</label>
+                        <input type="file" id="ticketPhotos" accept="image/*" multiple style="padding: 10px; border: 2px solid rgba(76, 175, 80, 0.3); border-radius: 8px; background: rgba(255, 255, 255, 0.9);">
+                        <div id="photoPreview" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">Можно выбрать до 5 фотографий</p>
+                    </div>
+                    <button type="submit">Создать заявку</button>
+                </form>
+                <div id="createTicketResult" class="result"></div>
+            </div>
+            
+            <div id="onlineEmployeesTab" class="tab-content">
+                <h2>👨‍💼 Сотрудники онлайн</h2>
+                <button onclick="loadOnlineEmployees()" style="margin-bottom: 20px;">🔄 Обновить список</button>
+                <div id="onlineEmployeesList">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8081/api/v1';
+        let authToken = localStorage.getItem('authToken');
+        let currentUser = null;
+        
+        // Маппинг ролей и имён на должности
+        function getPosition(user) {
+            const name = user.name;
+            const role = user.role;
+            
+            // Специфичные должности по имени
+            if (name === 'Самарин Э.Л.') return 'Зам. Директора по АИО';
+            if (name === 'Мулык И.М.') return 'Супервайзер';
+            if (name === 'Петрова В.В.') return 'Управляющий ГК';
+            if (name === 'Двояковская Н.В.') return 'Исполнительный директор';
+            if (name === 'Ананьев М.О.') return 'Электрик';
+            if (name === 'Богданов А.Н.') return 'Электрик';
+            if (name === 'Сафонев В.П.') return 'Техник';
+            if (name === 'Бегдаев Е.А.') return 'Техник';
+            if (name === 'Муратов В.В.') return 'Техник';
+            
+            // Общие должности по роли
+            if (role === 'ADMIN') return 'Администратор';
+            if (role === 'DIRECTOR') return 'Директор';
+            if (role === 'MANAGER') return 'Руководитель';
+            if (role === 'TECHNICIAN') return 'Техник';
+            
+            return role;
+        }
+        
+        // Загружаем сохранённых пользователей
+        loadSavedUsers();
+        
+        // Проверяем, есть ли сохранённый токен
+        if (authToken) {
+            checkAuth();
+        }
+        
+        // Обработка входа
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const login = document.getElementById('login').value.trim();
+            const password = document.getElementById('password').value;
+            const rememberUser = document.getElementById('rememberUser').checked;
+            const resultDiv = document.getElementById('loginResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.accessToken;
+                    currentUser = data.user;
+                    localStorage.setItem('authToken', authToken);
+                    // Сохраняем информацию о пользователе для использования при проверке токена
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    
+                    // Сохраняем пользователя если нужно
+                    if (rememberUser) {
+                        saveUser(login, password);
+                    }
+                    
+                    showMainInterface();
+                    showResult(resultDiv, `✅ Успешная авторизация! Пользователь: ${data.user.name} (${data.user.role})`, 'success');
+                } else {
+                    showResult(resultDiv, `❌ Ошибка: ${data.error || data.details}`, 'error');
+                }
+            } catch (error) {
+                showResult(resultDiv, `Ошибка соединения: ${error.message}`, 'error');
+            }
+        });
+        
+        function loadSavedUsers() {
+            const savedUsers = JSON.parse(localStorage.getItem('savedUsers') || '[]');
+            const select = document.getElementById('savedUsers');
+            select.innerHTML = '<option value="">-- Выберите сохранённого пользователя --</option>';
+            
+            savedUsers.forEach((user, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = user.login;
+                select.appendChild(option);
+            });
+        }
+        
+        function selectSavedUser() {
+            const select = document.getElementById('savedUsers');
+            const index = select.value;
+            if (index === '') return;
+            
+            const savedUsers = JSON.parse(localStorage.getItem('savedUsers') || '[]');
+            const user = savedUsers[index];
+            if (user) {
+                document.getElementById('login').value = user.login;
+                document.getElementById('password').value = user.password;
+            }
+        }
+        
+        function saveUser(login, password) {
+            const savedUsers = JSON.parse(localStorage.getItem('savedUsers') || '[]');
+            // Проверяем, нет ли уже такого пользователя
+            if (!savedUsers.find(u => u.login === login)) {
+                savedUsers.push({ login, password });
+                localStorage.setItem('savedUsers', JSON.stringify(savedUsers));
+                loadSavedUsers();
+            }
+        }
+        
+        // Создание пользователя
+        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('usersResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        email: document.getElementById('newUserName').value.toLowerCase().replace(/\s+/g, '') + '@techapp.local',
+                        password: document.getElementById('newUserPassword').value,
+                        name: document.getElementById('newUserName').value,
+                        role: document.getElementById('newUserRole').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(resultDiv, `Пользователь создан: ${data.name} (${data.role})`, 'success');
+                    document.getElementById('createUserForm').reset();
+                    loadUsers();
+                } else {
+                    showResult(resultDiv, `Ошибка: ${data.error || data.details}`, 'error');
+                }
+            } catch (error) {
+                showResult(resultDiv, `Ошибка: ${error.message}`, 'error');
+            }
+        });
+        
+        // Превью фотографий при выборе
+        document.getElementById('ticketPhotos')?.addEventListener('change', function(e) {
+            const previewDiv = document.getElementById('photoPreview');
+            if (!previewDiv) return;
+            
+            previewDiv.innerHTML = '';
+            const files = Array.from(e.target.files).slice(0, 5); // Ограничиваем до 5 файлов
+            
+            if (files.length > 5) {
+                alert('Можно выбрать только до 5 фотографий. Первые 5 будут загружены.');
+            }
+            
+            files.forEach((file, index) => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.width = '100px';
+                        img.style.height = '100px';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '8px';
+                        img.style.border = '2px solid rgba(76, 175, 80, 0.3)';
+                        img.style.margin = '5px';
+                        previewDiv.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+        
+        // Создание заявки
+        document.getElementById('createTicketForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('createTicketResult');
+            
+            try {
+                // Сначала загружаем фотографии
+                const photoInput = document.getElementById('ticketPhotos');
+                const photoFiles = Array.from(photoInput.files).slice(0, 5); // Ограничиваем до 5
+                let uploadedPhotos = [];
+                
+                if (photoFiles.length > 0) {
+                    const formData = new FormData();
+                    photoFiles.forEach(file => {
+                        formData.append('files', file);
+                    });
+                    
+                    const uploadResponse = await fetch(`${API_BASE}/files/upload`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: formData
+                    });
+                    
+                    const uploadText = await uploadResponse.text();
+                    let uploadData = {};
+                    try {
+                        uploadData = uploadText ? JSON.parse(uploadText) : {};
+                    } catch (e) {
+                        console.error('Ошибка парсинга ответа загрузки файлов:', e);
+                    }
+                    
+                    if (uploadResponse.ok && uploadData.files) {
+                        uploadedPhotos = uploadData.files;
+                    } else {
+                        const errorMsg = uploadData.error || `HTTP ${uploadResponse.status}`;
+                        showResult(resultDiv, `❌ Ошибка загрузки фотографий: ${errorMsg}`, 'error');
+                        return;
+                    }
+                }
+                
+                // Создаем заявку с фотографиями
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title: document.getElementById('ticketTitle').value,
+                        description: document.getElementById('ticketDescription').value,
+                        priority: document.getElementById('ticketPriority').value,
+                        assigneeId: document.getElementById('ticketAssigneeId').value || null,
+                        photos: uploadedPhotos
+                    })
+                });
+                
+                const text = await response.text();
+                let data = {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    console.error('Ошибка парсинга ответа при создании заявки:', e, 'Текст ответа:', text);
+                    showResult(resultDiv, `Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}`, 'error');
+                    return;
+                }
+                
+                if (response.ok) {
+                    showResult(resultDiv, `✅ Заявка создана! ID: ${data.id}`, 'success');
+                    document.getElementById('createTicketForm').reset();
+                    document.getElementById('photoPreview').innerHTML = '';
+                    loadTickets();
+                } else {
+                    const errorMsg = data.error || data.details || `HTTP ${response.status}`;
+                    showResult(resultDiv, `❌ Ошибка: ${errorMsg}`, 'error');
+                    console.error('Ошибка создания заявки:', data);
+                }
+            } catch (error) {
+                console.error('Ошибка при создании заявки:', error);
+                showResult(resultDiv, `❌ Ошибка: ${error.message}`, 'error');
+            }
+        });
+        
+        async function loadUsers() {
+            const listDiv = document.getElementById('usersList');
+            listDiv.innerHTML = 'Загрузка...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const text = await response.text();
+                let data;
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    listDiv.innerHTML = `<div class="error">Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}</div>`;
+                    return;
+                }
+                
+                if (response.ok) {
+                    if (data.items && Array.isArray(data.items)) {
+                        listDiv.innerHTML = data.items.map(user => {
+                            const position = getPosition(user);
+                            const roleClass = user.role.toLowerCase();
+                            return `
+                            <div class="list-item">
+                                <h3>${user.name} <span class="badge badge-${roleClass}">${position}</span></h3>
+                                <p>Email: ${user.email || 'N/A'}</p>
+                                <p>ID: ${user.id}</p>
+                            </div>
+                        `;
+                        }).join('');
+                    } else {
+                        listDiv.innerHTML = `<div class="error">Ошибка: Неверный формат данных</div>`;
+                    }
+                } else {
+                    listDiv.innerHTML = `<div class="error">Ошибка: ${data.error || `HTTP ${response.status}`}</div>`;
+                }
+            } catch (error) {
+                listDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadTickets() {
+            const listDiv = document.getElementById('ticketsList');
+            listDiv.innerHTML = 'Загрузка...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const text = await response.text();
+                let data;
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    listDiv.innerHTML = `<div class="error">Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}. Проверьте авторизацию.</div>`;
+                    return;
+                }
+                
+                if (response.ok) {
+                    if (data.items && Array.isArray(data.items)) {
+                        if (data.items.length === 0) {
+                            listDiv.innerHTML = '<p style="color: #4a7c2a; font-size: 18px;">🌿 Заявок пока нет. Создайте первую заявку!</p>';
+                        } else {
+                            listDiv.innerHTML = data.items.map(ticket => {
+                                const statusClass = ticket.status.toLowerCase().replace('_', '-');
+                                return `
+                                <div class="list-item">
+                                    <h3>${ticket.title} 
+                                        <span class="badge badge-${statusClass}">${ticket.status}</span>
+                                        <span class="badge" style="background: #2d5016;">${ticket.priority}</span>
+                                    </h3>
+                                    <p>${ticket.description}</p>
+                                    <p><strong>Создатель:</strong> ${ticket.creator.name} | <strong>Исполнитель:</strong> ${ticket.assignee?.name || 'Не назначен'}</p>
+                                    <p><strong>Создано:</strong> ${new Date(ticket.createdAt * 1000).toLocaleString('ru-RU')}</p>
+                                    ${ticket.estimatedCompletionTime ? 
+                                        `<p><strong>Примерное время выполнения:</strong> ${new Date(ticket.estimatedCompletionTime * 1000).toLocaleString('ru-RU')}</p>` : ''}
+                                    ${ticket.comments ? 
+                                        `<p><strong>Комментарии:</strong> ${ticket.comments}</p>` : ''}
+                                    ${ticket.assignedBy ? 
+                                        `<p><strong>Назначен руководителем:</strong> ${ticket.assignedBy.name}</p>` : ''}
+                                    ${ticket.photos && ticket.photos.length > 0 ? 
+                                        `<div style="margin-top: 15px;">
+                                            <strong>Фотографии (${ticket.photos.length}):</strong>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                                                ${ticket.photos.slice(0, 3).map(photo => {
+                                                    const photoUrl = `http://localhost:8081/${photo}`;
+                                                    return `<img src="${photoUrl}" 
+                                                          style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid rgba(76, 175, 80, 0.3); cursor: pointer; object-fit: cover;"
+                                                          onerror="this.style.display='none';">`;
+                                                }).join('')}
+                                                ${ticket.photos.length > 3 ? `<div style="width: 100px; height: 100px; border-radius: 8px; border: 2px solid rgba(76, 175, 80, 0.3); display: flex; align-items: center; justify-content: center; background: rgba(76, 175, 80, 0.1); color: #4a7c2a; font-weight: bold;">+${ticket.photos.length - 3}</div>` : ''}
+                                            </div>
+                                        </div>` : ''}
+                                    <div class="actions">
+                                        <button class="btn-small" style="background: #0288d1; color: white; border-color: #01579b;" onclick="showTicketViewModal('${ticket.id}')">👁️ Просмотр</button>
+                                        ${ticket.status === 'NEW' || ticket.status === 'ASSIGNED' ? 
+                                            (currentUser && currentUser.role === 'TECHNICIAN' ? 
+                                                `<button class="btn-small btn-success" onclick="showAcceptTicketModal('${ticket.id}')">✅ Принять</button>` :
+                                                (currentUser && (currentUser.role === 'MANAGER' || currentUser.role === 'DIRECTOR' || currentUser.role === 'ADMIN') ?
+                                                    `<button class="btn-small btn-success" onclick="showAssignTicketModal('${ticket.id}')">👤 Назначить техника</button>` : '')) : ''}
+                                        ${ticket.status === 'IN_PROGRESS' && currentUser && currentUser.role === 'TECHNICIAN' ? 
+                                            `<button class="btn-small btn-success" onclick="showCompleteTicketModal('${ticket.id}')">✔️ Завершить</button>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                            }).join('');
+                        }
+                    } else {
+                        listDiv.innerHTML = `<div class="error">Ошибка: Неверный формат данных</div>`;
+                    }
+                } else {
+                    listDiv.innerHTML = `<div class="error">Ошибка: ${data.error || `HTTP ${response.status}. Возможно, требуется авторизация.`}</div>`;
+                }
+            } catch (error) {
+                listDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        let currentTicketId = null;
+        let selectedMinutes = null;
+        
+        function showAcceptTicketModal(ticketId) {
+            currentTicketId = ticketId;
+            selectedMinutes = null;
+            
+            // Сбрасываем выбор времени
+            document.querySelectorAll('.time-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Показываем модальное окно
+            document.getElementById('timeModal').classList.add('active');
+        }
+        
+        function closeTimeModal() {
+            document.getElementById('timeModal').classList.remove('active');
+            currentTicketId = null;
+            selectedMinutes = null;
+        }
+        
+        function confirmTime() {
+            if (!currentTicketId) {
+                alert('Ошибка: ID заявки не найден');
+                return;
+            }
+            
+            // Сохраняем ticketId перед закрытием модального окна
+            const ticketId = currentTicketId;
+            
+            let estimatedTimeUnix = null;
+            if (selectedMinutes) {
+                // Вычисляем время: текущее время + выбранные минуты
+                const now = new Date();
+                const estimatedTime = new Date(now.getTime() + selectedMinutes * 60 * 1000);
+                estimatedTimeUnix = Math.floor(estimatedTime.getTime() / 1000);
+            }
+            // Если selectedMinutes === null, то estimatedTimeUnix останется null (время не указано)
+            
+            closeTimeModal();
+            acceptTicket(ticketId, estimatedTimeUnix);
+        }
+        
+        // Инициализация обработчиков событий для модальных окон
+        function initModals() {
+            const timeOptions = document.getElementById('timeOptions');
+            if (timeOptions) {
+                timeOptions.addEventListener('click', function(e) {
+                    const option = e.target.closest('.time-option');
+                    if (option) {
+                        // Убираем выделение с других опций
+                        document.querySelectorAll('.time-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        // Выделяем выбранную опцию
+                        option.classList.add('selected');
+                        selectedMinutes = parseInt(option.getAttribute('data-minutes'));
+                    }
+                });
+            }
+            
+            // Закрытие модального окна при клике на overlay
+            const timeModal = document.getElementById('timeModal');
+            if (timeModal) {
+                timeModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeTimeModal();
+                    }
+                });
+            }
+            
+            const commentModal = document.getElementById('commentModal');
+            if (commentModal) {
+                commentModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeCommentModal();
+                    }
+                });
+            }
+            
+            const ticketViewModal = document.getElementById('ticketViewModal');
+            if (ticketViewModal) {
+                ticketViewModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeTicketViewModal();
+                    }
+                });
+            }
+            
+            const assignTechnicianModal = document.getElementById('assignTechnicianModal');
+            if (assignTechnicianModal) {
+                assignTechnicianModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeAssignTechnicianModal();
+                    }
+                });
+            }
+        }
+        
+        // Инициализируем модальные окна при загрузке страницы
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initModals);
+        } else {
+            initModals();
+        }
+        
+        async function acceptTicket(ticketId, estimatedCompletionTime = null) {
+            if (!ticketId) {
+                alert('❌ Ошибка: ID заявки не указан');
+                console.error('acceptTicket вызван с ticketId =', ticketId);
+                return;
+            }
+            
+            try {
+                const requestBody = {};
+                if (estimatedCompletionTime !== null) {
+                    requestBody.estimatedCompletionTime = estimatedCompletionTime;
+                }
+                
+                const response = await fetch(`${API_BASE}/tickets/${ticketId}/accept`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const text = await response.text();
+                let data = {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    alert(`Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}`);
+                    console.error('Ошибка парсинга ответа:', text);
+                    return;
+                }
+                if (response.ok) {
+                    loadTickets();
+                    alert('✅ Заявка принята успешно!');
+                } else {
+                    const errorMsg = data.error || `HTTP ${response.status}`;
+                    alert(`❌ Ошибка: ${errorMsg}`);
+                    console.error('Ошибка принятия заявки:', data);
+                }
+            } catch (error) {
+                alert(`❌ Ошибка соединения: ${error.message}`);
+                console.error('Ошибка при принятии заявки:', error);
+            }
+        }
+        
+        async function loadTechnicians() {
+            try {
+                const response = await fetch(`${API_BASE}/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const text = await response.text();
+                let data;
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    console.error('Ошибка парсинга JSON:', e);
+                    return [];
+                }
+                if (response.ok && data.items && Array.isArray(data.items)) {
+                    return data.items.filter(u => u.role === 'TECHNICIAN');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки техников:', error);
+            }
+            return [];
+        }
+        
+        async function loadOnlineEmployees() {
+            const listDiv = document.getElementById('onlineEmployeesList');
+            if (!listDiv) {
+                console.error('Элемент onlineEmployeesList не найден');
+                return;
+            }
+            
+            listDiv.innerHTML = 'Загрузка...';
+            
+            try {
+                // Загружаем всех пользователей
+                const usersResponse = await fetch(`${API_BASE}/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const usersText = await usersResponse.text();
+                let usersData = {};
+                try {
+                    usersData = usersText ? JSON.parse(usersText) : {};
+                } catch (e) {
+                    console.error('Ошибка парсинга ответа пользователей:', e, 'Текст:', usersText);
+                    listDiv.innerHTML = `<div class="error">Ошибка: Сервер вернул невалидный ответ. Статус: ${usersResponse.status}</div>`;
+                    return;
+                }
+                
+                if (!usersResponse.ok) {
+                    const errorMsg = usersData.error || `HTTP ${usersResponse.status}`;
+                    console.error('Ошибка загрузки пользователей:', errorMsg);
+                    listDiv.innerHTML = `<div class="error">Ошибка: ${errorMsg}</div>`;
+                    return;
+                }
+                
+                // Загружаем все заявки для определения статуса занятости
+                let ticketsData = { items: [] };
+                try {
+                    const ticketsResponse = await fetch(`${API_BASE}/tickets`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    
+                    if (ticketsResponse.ok) {
+                        const ticketsText = await ticketsResponse.text();
+                        try {
+                            ticketsData = ticketsText ? JSON.parse(ticketsText) : { items: [] };
+                        } catch (e) {
+                            console.warn('Ошибка парсинга заявок:', e);
+                        }
+                    } else {
+                        console.warn('Не удалось загрузить заявки для определения статуса занятости');
+                    }
+                } catch (e) {
+                    console.warn('Ошибка при загрузке заявок:', e);
+                }
+                
+                if (usersData.items && Array.isArray(usersData.items)) {
+                    // Фильтруем только онлайн пользователей (isOnline === true)
+                    const onlineEmployees = usersData.items.filter(employee => {
+                        return employee.isOnline === true || employee.isOnline === undefined;
+                    });
+                    
+                    // Определяем статус занятости для каждого сотрудника
+                    const employeesWithStatus = onlineEmployees.map(employee => {
+                        let status = 'Свободен';
+                        let statusClass = 'free';
+                        
+                        // Для техников проверяем наличие активных заявок
+                        if (employee.role === 'TECHNICIAN' && ticketsData.items && Array.isArray(ticketsData.items)) {
+                            const activeTickets = ticketsData.items.filter(ticket => 
+                                ticket.assignee && 
+                                ticket.assignee.id === employee.id && 
+                                ticket.status === 'IN_PROGRESS'
+                            );
+                            
+                            if (activeTickets.length > 0) {
+                                status = `Занят (${activeTickets.length} заявка${activeTickets.length > 1 ? 'и' : ''})`;
+                                statusClass = 'busy';
+                            }
+                        }
+                        
+                        return {
+                            ...employee,
+                            status,
+                            statusClass
+                        };
+                    });
+                    
+                    // Сортируем: сначала занятые, потом свободные, затем по имени
+                    employeesWithStatus.sort((a, b) => {
+                        if (a.statusClass === 'busy' && b.statusClass === 'free') return -1;
+                        if (a.statusClass === 'free' && b.statusClass === 'busy') return 1;
+                        return a.name.localeCompare(b.name);
+                    });
+                    
+                    if (employeesWithStatus.length === 0) {
+                        listDiv.innerHTML = '<p style="color: #4a7c2a; font-size: 18px;">🌿 Сейчас нет сотрудников онлайн.</p>';
+                        return;
+                    }
+                    
+                    listDiv.innerHTML = employeesWithStatus.map(employee => {
+                        const position = getPosition(employee);
+                        const statusBadgeClass = employee.statusClass === 'busy' ? 'badge-busy' : 'badge-free';
+                        
+                        return `
+                            <div class="list-item" style="margin-bottom: 15px; padding: 20px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(250, 250, 250, 0.95) 100%); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid ${employee.statusClass === 'busy' ? 'rgba(211, 47, 47, 0.3)' : 'rgba(76, 175, 80, 0.3)'};">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                    <div style="flex: 1; min-width: 200px;">
+                                        <h3 style="color: #2d5016; margin-bottom: 8px; font-size: 18px;">
+                                            ${employee.name}
+                                            <span class="badge badge-free" style="margin-left: 10px; padding: 4px 12px; font-size: 12px; background: #4caf50; color: white;">
+                                                🟢 Онлайн
+                                            </span>
+                                            <span class="badge ${statusBadgeClass}" style="margin-left: 10px; padding: 4px 12px; font-size: 12px;">
+                                                ${employee.status}
+                                            </span>
+                                        </h3>
+                                        <p style="color: #4a7c2a; font-size: 14px; margin: 5px 0;">
+                                            <strong>Должность:</strong> ${position}
+                                        </p>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="width: 16px; height: 16px; border-radius: 50%; background: ${employee.statusClass === 'busy' ? '#d32f2f' : '#4caf50'}; display: inline-block; margin-right: 8px; box-shadow: 0 0 8px ${employee.statusClass === 'busy' ? 'rgba(211, 47, 47, 0.5)' : 'rgba(76, 175, 80, 0.5)'};"></div>
+                                        <span style="color: ${employee.statusClass === 'busy' ? '#d32f2f' : '#4caf50'}; font-weight: 600; font-size: 14px;">
+                                            ${employee.statusClass === 'busy' ? '🔴 Занят' : '🟢 Свободен'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    listDiv.innerHTML = `<div class="error">Ошибка: Неверный формат данных</div>`;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки сотрудников:', error);
+                listDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        let currentAssignTicketId = null;
+        
+        async function showAssignTicketModal(ticketId) {
+            currentAssignTicketId = ticketId;
+            const modal = document.getElementById('assignTechnicianModal');
+            const listDiv = document.getElementById('technicianList');
+            
+            modal.classList.add('active');
+            listDiv.innerHTML = '<p style="text-align: center; color: #666;">Загрузка техников...</p>';
+            
+            try {
+                const technicians = await loadTechnicians();
+                if (technicians.length === 0) {
+                    listDiv.innerHTML = '<p style="text-align: center; color: #d32f2f;">Нет доступных техников</p>';
+                    return;
+                }
+                
+                // Сортируем техников по фамилии
+                technicians.sort((a, b) => {
+                    const nameA = a.name.split(' ')[0] || a.name;
+                    const nameB = b.name.split(' ')[0] || b.name;
+                    return nameA.localeCompare(nameB, 'ru');
+                });
+                
+                listDiv.innerHTML = technicians.map(tech => {
+                    const position = getPosition({ role: 'TECHNICIAN', name: tech.name });
+                    return `
+                        <div class="technician-option" onclick="selectTechnician('${tech.id}', '${tech.name.replace(/'/g, "\\'")}')" 
+                             style="padding: 15px; margin-bottom: 10px; background: rgba(255, 255, 255, 0.8); border: 2px solid rgba(76, 175, 80, 0.3); border-radius: 8px; cursor: pointer; transition: all 0.3s;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: #2d5016; font-size: 16px;">${tech.name}</strong>
+                                    <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">${position}</p>
+                                </div>
+                                <div style="font-size: 24px;">👤</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки техников:', error);
+                listDiv.innerHTML = `<p style="text-align: center; color: #d32f2f;">Ошибка: ${error.message}</p>`;
+            }
+        }
+        
+        function selectTechnician(technicianId, technicianName) {
+            if (!currentAssignTicketId) {
+                alert('Ошибка: ID заявки не найден');
+                return;
+            }
+            
+            if (confirm(`Назначить техника "${technicianName}" на эту заявку?`)) {
+                // Сохраняем ticketId перед закрытием модального окна
+                const ticketId = currentAssignTicketId;
+                closeAssignTechnicianModal();
+                assignTicket(ticketId, technicianId);
+            }
+        }
+        
+        function closeAssignTechnicianModal() {
+            document.getElementById('assignTechnicianModal').classList.remove('active');
+            currentAssignTicketId = null;
+        }
+        
+        async function assignTicket(ticketId, technicianId) {
+            if (!ticketId || !technicianId) {
+                alert('❌ Ошибка: ID заявки или техника не указаны');
+                console.error('assignTicket вызван с:', { ticketId, technicianId });
+                return;
+            }
+            
+            try {
+                console.log('Назначаем техника:', { ticketId, technicianId });
+                const response = await fetch(`${API_BASE}/tickets/${ticketId}/assign`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ technicianId })
+                });
+                
+                const text = await response.text();
+                console.log('Ответ сервера:', { status: response.status, text });
+                let data = {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    console.error('Ошибка парсинга ответа:', e, 'Текст:', text);
+                    alert(`Ошибка: Сервер вернул невалидный ответ. Статус: ${response.status}`);
+                    return;
+                }
+                if (response.ok) {
+                    loadTickets();
+                    alert('✅ Техник назначен успешно!');
+                } else {
+                    const errorMsg = data.error || `HTTP ${response.status}`;
+                    console.error('Ошибка назначения техника:', data);
+                    alert(`❌ Ошибка: ${errorMsg}`);
+                }
+            } catch (error) {
+                console.error('Ошибка при назначении техника:', error);
+                alert(`❌ Ошибка соединения: ${error.message}`);
+            }
+        }
+        
+        function showCompleteTicketModal(ticketId) {
+            currentTicketId = ticketId;
+            document.getElementById('commentText').value = '';
+            document.getElementById('commentModal').classList.add('active');
+        }
+        
+        function closeCommentModal() {
+            document.getElementById('commentModal').classList.remove('active');
+            currentTicketId = null;
+        }
+        
+        async function showTicketViewModal(ticketId) {
+            const modal = document.getElementById('ticketViewModal');
+            const contentDiv = document.getElementById('ticketViewContent');
+            const titleDiv = document.getElementById('ticketViewTitle');
+            
+            modal.classList.add('active');
+            contentDiv.innerHTML = 'Загрузка...';
+            
+            try {
+                // Загружаем данные заявки из списка заявок
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const text = await response.text();
+                let data = {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    contentDiv.innerHTML = `<div class="error">Ошибка: Сервер вернул невалидный ответ</div>`;
+                    return;
+                }
+                
+                if (response.ok && data.items && Array.isArray(data.items)) {
+                    const ticket = data.items.find(t => t.id === ticketId);
+                    if (!ticket) {
+                        contentDiv.innerHTML = `<div class="error">Заявка не найдена</div>`;
+                        return;
+                    }
+                    
+                    const statusClass = ticket.status.toLowerCase().replace('_', '-');
+                    const statusLabels = {
+                        'NEW': 'Новая',
+                        'ASSIGNED': 'Назначена',
+                        'IN_PROGRESS': 'В работе',
+                        'COMPLETED': 'Завершена',
+                        'CANCELLED': 'Отменена'
+                    };
+                    const priorityLabels = {
+                        'LOW': 'Низкий',
+                        'MEDIUM': 'Средний',
+                        'HIGH': 'Высокий',
+                        'CRITICAL': 'Критический'
+                    };
+                    
+                    titleDiv.textContent = `📋 ${ticket.title}`;
+                    
+                    contentDiv.innerHTML = `
+                        <div style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid rgba(76, 175, 80, 0.3);">
+                            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                                <span class="badge badge-${statusClass}" style="font-size: 14px; padding: 6px 12px;">${statusLabels[ticket.status] || ticket.status}</span>
+                                <span class="badge" style="background: #2d5016; color: white; font-size: 14px; padding: 6px 12px;">${priorityLabels[ticket.priority] || ticket.priority}</span>
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <h4 style="color: #2d5016; margin-bottom: 8px;">📝 Описание:</h4>
+                                <p style="color: #333; line-height: 1.6; white-space: pre-wrap;">${ticket.description}</p>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <strong style="color: #2d5016;">👤 Создатель:</strong>
+                                    <p style="margin: 5px 0;">${ticket.creator.name}</p>
+                                </div>
+                                <div>
+                                    <strong style="color: #2d5016;">🔧 Исполнитель:</strong>
+                                    <p style="margin: 5px 0;">${ticket.assignee?.name || 'Не назначен'}</p>
+                                </div>
+                                <div>
+                                    <strong style="color: #2d5016;">📅 Создано:</strong>
+                                    <p style="margin: 5px 0;">${new Date(ticket.createdAt * 1000).toLocaleString('ru-RU')}</p>
+                                </div>
+                                ${ticket.estimatedCompletionTime ? `
+                                <div>
+                                    <strong style="color: #2d5016;">⏱️ Примерное время выполнения:</strong>
+                                    <p style="margin: 5px 0;">${new Date(ticket.estimatedCompletionTime * 1000).toLocaleString('ru-RU')}</p>
+                                </div>` : ''}
+                                ${ticket.completedAt ? `
+                                <div>
+                                    <strong style="color: #2d5016;">✅ Завершено:</strong>
+                                    <p style="margin: 5px 0;">${new Date(ticket.completedAt * 1000).toLocaleString('ru-RU')}</p>
+                                </div>` : ''}
+                                ${ticket.assignedBy ? `
+                                <div>
+                                    <strong style="color: #2d5016;">👔 Назначен руководителем:</strong>
+                                    <p style="margin: 5px 0;">${ticket.assignedBy.name}</p>
+                                </div>` : ''}
+                            </div>
+                            
+                            ${ticket.comments ? `
+                            <div style="margin-bottom: 15px; padding: 15px; background: rgba(76, 175, 80, 0.1); border-radius: 8px; border-left: 4px solid #4a7c2a;">
+                                <strong style="color: #2d5016;">💬 Комментарии:</strong>
+                                <p style="margin: 8px 0 0 0; color: #333; white-space: pre-wrap;">${ticket.comments}</p>
+                            </div>` : ''}
+                        </div>
+                        
+                        ${ticket.photos && ticket.photos.length > 0 ? `
+                        <div style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 12px; border: 2px solid rgba(76, 175, 80, 0.3);">
+                            <h4 style="color: #2d5016; margin-bottom: 15px;">📷 Фотографии (${ticket.photos.length}):</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                                ${ticket.photos.map((photo, index) => {
+                                    const photoUrl = `http://localhost:8081/${photo}`;
+                                    return `<div style="position: relative;">
+                                        <img src="${photoUrl}" 
+                                             style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(76, 175, 80, 0.3); cursor: pointer;"
+                                             onclick="window.open('${photoUrl}', '_blank')"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                             alt="Фото ${index + 1}">
+                                        <div style="display: none; width: 100%; height: 200px; border-radius: 8px; border: 2px solid rgba(76, 175, 80, 0.3); background: rgba(76, 175, 80, 0.1); display: flex; align-items: center; justify-content: center; color: #666;">
+                                            Ошибка загрузки<br><small style="font-size: 10px;">${photo}</small>
+                                        </div>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>` : '<div style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 12px; border: 2px solid rgba(76, 175, 80, 0.3); text-align: center; color: #666;"><p>📷 Фотографий нет</p></div>'}
+                    `;
+                } else {
+                    contentDiv.innerHTML = `<div class="error">Ошибка загрузки заявки</div>`;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки заявки:', error);
+                contentDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        function closeTicketViewModal() {
+            document.getElementById('ticketViewModal').classList.remove('active');
+        }
+        
+        function confirmComment() {
+            if (!currentTicketId) {
+                alert('Ошибка: ID заявки не найден');
+                return;
+            }
+            
+            // Сохраняем ticketId перед закрытием модального окна
+            const ticketId = currentTicketId;
+            const comments = document.getElementById('commentText').value.trim() || null;
+            
+            closeCommentModal();
+            completeTicket(ticketId, comments);
+        }
+        
+        async function completeTicket(ticketId, comments = null) {
+            try {
+                const response = await fetch(`${API_BASE}/tickets/${ticketId}/complete`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ comments })
+                });
+                
+                const text = await response.text();
+                let data = {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    alert(`Ошибка: Сервер вернул невалидный ответ`);
+                    return;
+                }
+                if (response.ok) {
+                    loadTickets();
+                    alert('Заявка завершена!');
+                } else {
+                    alert(`Ошибка: ${data.error || `HTTP ${response.status}`}`);
+                }
+            } catch (error) {
+                alert(`Ошибка: ${error.message}`);
+            }
+        }
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => {
+                t.classList.remove('active');
+                t.style.display = 'none';
+            });
+            
+            event.target.classList.add('active');
+            const tabContent = document.getElementById(tabName + 'Tab');
+            if (tabContent) {
+                tabContent.classList.add('active');
+                tabContent.style.display = 'block';
+                
+                // Загружаем данные при переключении на вкладку
+                if (tabName === 'onlineEmployees') {
+                    loadOnlineEmployees();
+                }
+            }
+        }
+        
+        function showMainInterface() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainSection').style.display = 'block';
+            const position = getPosition(currentUser);
+            document.getElementById('userInfo').textContent = `🌲 Пользователь: ${currentUser.name} (${position})`;
+            document.getElementById('headerRight').style.display = 'flex';
+            
+            // Показываем вкладку пользователей только для админа
+            const usersTabBtn = document.getElementById('usersTabBtn');
+            const usersTabContent = document.getElementById('usersTab');
+            if (currentUser.role === 'ADMIN') {
+                if (usersTabBtn) usersTabBtn.style.display = 'block';
+                if (usersTabContent) usersTabContent.style.display = 'block';
+                loadUsers();
+            } else {
+                if (usersTabBtn) usersTabBtn.style.display = 'none';
+                if (usersTabContent) usersTabContent.style.display = 'none';
+            }
+            
+            // Показываем вкладку создания заявок только для менеджеров, директоров и админов
+            const createTicketTabBtn = document.getElementById('createTicketTabBtn');
+            const createTicketTabContent = document.getElementById('createTicketTab');
+            if (currentUser.role === 'MANAGER' || currentUser.role === 'DIRECTOR' || currentUser.role === 'ADMIN') {
+                if (createTicketTabBtn) createTicketTabBtn.style.display = 'block';
+            } else {
+                if (createTicketTabBtn) createTicketTabBtn.style.display = 'none';
+            }
+            
+            // Вкладка "Сотрудники онлайн" доступна всем авторизованным пользователям
+            const onlineEmployeesTabBtn = document.getElementById('onlineEmployeesTabBtn');
+            if (onlineEmployeesTabBtn) onlineEmployeesTabBtn.style.display = 'block';
+            
+            // Загружаем личный кабинет (первая вкладка)
+            loadProfile();
+        }
+        
+        async function loadProfile() {
+            const profileDiv = document.getElementById('profileContent');
+            if (!profileDiv) return;
+            
+            profileDiv.innerHTML = 'Загрузка...';
+            
+            try {
+                if (currentUser.role === 'TECHNICIAN') {
+                    await loadTechnicianProfile(profileDiv);
+                } else if (currentUser.role === 'MANAGER' || currentUser.role === 'DIRECTOR' || currentUser.role === 'ADMIN') {
+                    await loadManagerProfile(profileDiv);
+                } else {
+                    profileDiv.innerHTML = '<p>Информация недоступна</p>';
+                }
+            } catch (error) {
+                profileDiv.innerHTML = `<div class="error">Ошибка загрузки: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadTechnicianProfile(profileDiv) {
+            try {
+                // Получаем ID текущего пользователя из токена
+                const tokenParts = authToken.split('.');
+                const payload = JSON.parse(atob(tokenParts[1]));
+                const userId = payload.sub;
+                
+                // Загружаем все заявки для подсчета выполненных за смену
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const text = await response.text();
+                let data = {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    profileDiv.innerHTML = `<div class="error">Ошибка: Сервер вернул невалидный ответ</div>`;
+                    return;
+                }
+                
+                if (response.ok && data.items && Array.isArray(data.items)) {
+                    // Подсчитываем выполненные заявки за сегодня (смена)
+                    const now = new Date();
+                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const todayStartUnix = Math.floor(todayStart.getTime() / 1000);
+                    
+                    const completedToday = data.items.filter(ticket => {
+                        return ticket.status === 'COMPLETED' && 
+                               ticket.assignee && 
+                               ticket.assignee.id === userId &&
+                               ticket.completedAt && 
+                               ticket.completedAt >= todayStartUnix;
+                    }).length;
+                    
+                    const position = getPosition(currentUser);
+                    const lastName = currentUser.name.split(' ')[0]; // Фамилия
+                    
+                    profileDiv.innerHTML = `
+                        <div class="profile-card" style="background: linear-gradient(135deg, rgba(245, 245, 220, 0.95) 0%, rgba(250, 250, 230, 0.95) 100%); padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid rgba(76, 175, 80, 0.3);">
+                            <h3 style="color: #2d5016; margin-bottom: 20px;">📋 Информация о сотруднике</h3>
+                            <div style="font-size: 16px; line-height: 2;">
+                                <p><strong>Должность:</strong> ${position}</p>
+                                <p><strong>ФИО:</strong> ${currentUser.name}</p>
+                                <p><strong>Выполнено заявок за смену:</strong> <span style="font-size: 24px; color: #4a7c2a; font-weight: bold;">${completedToday}</span></p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    profileDiv.innerHTML = `<div class="error">Ошибка загрузки данных</div>`;
+                }
+            } catch (error) {
+                profileDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadManagerProfile(profileDiv) {
+            try {
+                // Загружаем всех пользователей для подсчета онлайн техников
+                const usersResponse = await fetch(`${API_BASE}/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const usersText = await usersResponse.text();
+                let usersData = {};
+                try {
+                    usersData = usersText ? JSON.parse(usersText) : {};
+                } catch (e) {
+                    console.error('Ошибка парсинга ответа пользователей:', e, 'Текст ответа:', usersText);
+                    profileDiv.innerHTML = `<div class="error">Ошибка: Сервер вернул невалидный ответ. Статус: ${usersResponse.status}</div>`;
+                    return;
+                }
+                
+                // Если нет доступа к списку пользователей, показываем информацию без подсчета техников
+                if (!usersResponse.ok) {
+                    console.warn('Нет доступа к списку пользователей, показываем упрощенную версию');
+                    const position = getPosition(currentUser);
+                    const lastName = currentUser.name.split(' ')[0]; // Фамилия
+                    
+                    profileDiv.innerHTML = `
+                        <div class="profile-card" style="background: linear-gradient(135deg, rgba(245, 245, 220, 0.95) 0%, rgba(250, 250, 230, 0.95) 100%); padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid rgba(76, 175, 80, 0.3); margin-bottom: 20px;">
+                            <h3 style="color: #2d5016; margin-bottom: 20px;">📊 Информация о руководителе</h3>
+                            <div style="font-size: 16px; line-height: 2;">
+                                <p><strong>Должность:</strong> ${position}</p>
+                                <p><strong>Фамилия:</strong> ${lastName}</p>
+                                <p><strong>Работников онлайн:</strong> <span style="font-size: 24px; color: #4a7c2a; font-weight: bold;">-</span></p>
+                            </div>
+                        </div>
+                        <div class="profile-card" style="background: linear-gradient(135deg, rgba(245, 245, 220, 0.95) 0%, rgba(250, 250, 230, 0.95) 100%); padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid rgba(76, 175, 80, 0.3);">
+                            <h3 style="color: #2d5016; margin-bottom: 20px;">📄 Выгрузить отчёт</h3>
+                            <div class="form-group">
+                                <label for="reportPeriod">Период отчёта:</label>
+                                <select id="reportPeriod" style="width: 100%; padding: 10px; border: 2px solid rgba(76, 175, 80, 0.3); border-radius: 8px; font-size: 16px;">
+                                    <option value="hour">За последний час</option>
+                                    <option value="day" selected>За сегодня</option>
+                                    <option value="month">За текущий месяц</option>
+                                </select>
+                            </div>
+                            <button onclick="exportReport()" style="width: 100%; margin-top: 15px; padding: 12px 24px; background: #4a7c2a; color: white; border: 2px solid #2d5016; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 3px 6px rgba(0,0,0,0.2);">
+                                📥 Выгрузить отчёт в PDF
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (usersData.items && Array.isArray(usersData.items)) {
+                    const technicians = usersData.items.filter(u => u.role === 'TECHNICIAN');
+                    // Считаем онлайн техников (техники, которые были активны в последние 5 минут)
+                    const onlineTechnicians = technicians.filter(t => t.isOnline === true).length;
+                    
+                    const position = getPosition(currentUser);
+                    const lastName = currentUser.name.split(' ')[0]; // Фамилия
+                    
+                    profileDiv.innerHTML = `
+                        <div class="profile-card" style="background: linear-gradient(135deg, rgba(245, 245, 220, 0.95) 0%, rgba(250, 250, 230, 0.95) 100%); padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid rgba(76, 175, 80, 0.3); margin-bottom: 20px;">
+                            <h3 style="color: #2d5016; margin-bottom: 20px;">📊 Информация о руководителе</h3>
+                            <div style="font-size: 16px; line-height: 2;">
+                                <p><strong>Должность:</strong> ${position}</p>
+                                <p><strong>Фамилия:</strong> ${lastName}</p>
+                                <p><strong>Работников онлайн:</strong> <span style="font-size: 24px; color: #4a7c2a; font-weight: bold;">${onlineTechnicians}</span></p>
+                            </div>
+                        </div>
+                        <div class="profile-card" style="background: linear-gradient(135deg, rgba(245, 245, 220, 0.95) 0%, rgba(250, 250, 230, 0.95) 100%); padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid rgba(76, 175, 80, 0.3);">
+                            <h3 style="color: #2d5016; margin-bottom: 20px;">📄 Выгрузить отчёт</h3>
+                            <div class="form-group">
+                                <label for="reportPeriod">Период отчёта:</label>
+                                <select id="reportPeriod" style="width: 100%; padding: 10px; border: 2px solid rgba(76, 175, 80, 0.3); border-radius: 8px; font-size: 16px;">
+                                    <option value="hour">За последний час</option>
+                                    <option value="day" selected>За сегодня</option>
+                                    <option value="month">За текущий месяц</option>
+                                </select>
+                            </div>
+                            <button onclick="exportReport()" style="width: 100%; margin-top: 15px; padding: 12px 24px; background: #4a7c2a; color: white; border: 2px solid #2d5016; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 3px 6px rgba(0,0,0,0.2);">
+                                📥 Выгрузить отчёт в PDF
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    console.error('Неверный формат данных пользователей:', usersData);
+                    profileDiv.innerHTML = `<div class="error">Ошибка: Неверный формат данных. Статус: ${usersResponse.status}</div>`;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки профиля руководителя:', error);
+                profileDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        async function exportReport() {
+            const period = document.getElementById('reportPeriod').value;
+            
+            try {
+                const url = `${API_BASE}/tickets/export/pdf?period=${period}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `отчет_${period}_${new Date().toISOString().split('T')[0]}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    alert('✅ Отчёт успешно выгружен!');
+                } else {
+                    const text = await response.text();
+                    let data = {};
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (e) {}
+                    alert(`❌ Ошибка: ${data.error || `HTTP ${response.status}`}`);
+                }
+            } catch (error) {
+                alert(`❌ Ошибка: ${error.message}`);
+            }
+        }
+        
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('mainSection').style.display = 'none';
+            document.getElementById('headerRight').style.display = 'none';
+            document.getElementById('userInfo').textContent = 'Не авторизован';
+            document.getElementById('login').value = '';
+            document.getElementById('password').value = '';
+        }
+        
+        function showResult(div, message, type) {
+            div.className = `result ${type}`;
+            div.textContent = message;
+            div.style.display = 'block';
+        }
+        
+        async function checkAuth() {
+            try {
+                // Сначала пробуем загрузить сохраненную информацию о пользователе
+                const savedUserStr = localStorage.getItem('currentUser');
+                if (savedUserStr) {
+                    try {
+                        const savedUser = JSON.parse(savedUserStr);
+                        currentUser = savedUser;
+                    } catch (e) {
+                        console.warn('Не удалось распарсить сохраненного пользователя:', e);
+                    }
+                }
+                
+                // Декодируем токен для получения информации о пользователе
+                const tokenParts = authToken.split('.');
+                if (tokenParts.length === 3) {
+                    const payload = JSON.parse(atob(tokenParts[1]));
+                    const userId = payload.sub;
+                    const role = payload.role;
+                    
+                    // Пробуем загрузить актуальную информацию о пользователе из списка пользователей
+                    let userFound = false;
+                    try {
+                        const usersResponse = await fetch(`${API_BASE}/users`, {
+                            headers: { 'Authorization': `Bearer ${authToken}` }
+                        });
+                        
+                        if (usersResponse.ok) {
+                            const usersText = await usersResponse.text();
+                            let usersData = {};
+                            try {
+                                usersData = usersText ? JSON.parse(usersText) : {};
+                            } catch (e) {
+                                console.warn('Не удалось распарсить список пользователей:', e);
+                            }
+                            
+                            if (usersData.items && Array.isArray(usersData.items)) {
+                                const user = usersData.items.find(u => u.id === userId);
+                                if (user) {
+                                    currentUser = { name: user.name, role: role };
+                                    // Обновляем сохраненную информацию
+                                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                                    userFound = true;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Ошибка при загрузке списка пользователей:', e);
+                    }
+                    
+                    // Если не удалось найти пользователя в списке, используем сохраненную информацию
+                    // или пробуем проверить токен через заявки
+                    if (!userFound) {
+                        if (currentUser && currentUser.name && currentUser.name !== 'Пользователь') {
+                            // Используем сохраненную информацию о пользователе
+                        } else {
+                            try {
+                                const ticketsResponse = await fetch(`${API_BASE}/tickets`, {
+                                    headers: { 'Authorization': `Bearer ${authToken}` }
+                                });
+                                
+                                if (ticketsResponse.ok) {
+                                    // Токен валиден, но пользователь не найден в списке
+                                    // Используем сохраненную информацию или дефолтное имя
+                                    if (!currentUser || currentUser.name === 'Пользователь') {
+                                        console.warn('Пользователь не найден в списке пользователей, но токен валиден. ID:', userId);
+                                        currentUser = { name: 'Пользователь', role: role };
+                                    }
+                                } else {
+                                    throw new Error('Не авторизован');
+                                }
+                            } catch (e) {
+                                console.error('Ошибка проверки токена через заявки:', e);
+                                throw new Error('Не авторизован');
+                            }
+                        }
+                    }
+                    
+                    showMainInterface();
+                } else {
+                    throw new Error('Неверный токен');
+                }
+            } catch (e) {
+                console.error('Ошибка проверки авторизации:', e);
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                authToken = null;
+                currentUser = null;
+            }
+        }
+        
+        // ==============

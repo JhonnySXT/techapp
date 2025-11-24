@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calorie Buddy</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Calorie Buddy</h1>
+        <p>Лёгкий помощник для учёта калорий на день.</p>
+      </header>
+
+      <section class="card">
+        <h2>Дневная цель</h2>
+        <div class="goal-form">
+          <label>
+            Цель (ккал)
+            <input id="goalInput" type="number" min="500" step="50" />
+          </label>
+          <button id="goalSaveBtn">Сохранить</button>
+        </div>
+        <div class="progress">
+          <div id="progressBar" class="progress__bar"></div>
+        </div>
+        <div class="summary">
+          <p><strong>Съедено:</strong> <span id="summaryCalories">0</span> ккал</p>
+          <p><strong>Осталось:</strong> <span id="summaryRemaining">0</span> ккал</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Новая запись</h2>
+        <form id="entryForm">
+          <label>
+            Блюдо
+            <input name="title" type="text" required />
+          </label>
+          <label>
+            Калории
+            <input name="calories" type="number" min="0" required />
+          </label>
+          <label>
+            Категория
+            <select name="category">
+              <option value="breakfast">Завтрак</option>
+              <option value="lunch">Обед</option>
+              <option value="snack">Перекус</option>
+              <option value="dinner">Ужин</option>
+            </select>
+          </label>
+          <button type="submit">Добавить</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>История</h2>
+        <ul id="entryList" class="entry-list"></ul>
+        <button id="clearBtn" class="danger">Очистить все</button>
+      </section>
+    </main>
+
+    <template id="entryTemplate">
+      <li class="entry">
+        <div>
+          <p class="entry__title"></p>
+          <small class="entry__category"></small>
+        </div>
+        <div class="entry__right">
+          <span class="entry__calories"></span>
+          <button class="ghost">×</button>
+        </div>
+      </li>
+    </template>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
+
+
+
+
+
+

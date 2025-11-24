@@ -1,0 +1,34 @@
+# Игнорируем ненужные файлы при сборке Docker образа для Render
+.git
+.gitignore
+*.md
+.idea
+.vscode
+*.iml
+local.properties
+*.log
+.DS_Store
+Thumbs.db
+
+# Игнорируем другие модули (не нужны для сервера)
+app/
+calorie-app/
+org-chat-agent/
+scripts/
+docs/
+deploy/
+
+# Игнорируем build артефакты (будем собирать заново)
+server/build/
+build/
+.gradle
+
+# Оставляем только то, что нужно для сборки сервера
+!gradle/
+!gradlew
+!gradlew.bat
+!build.gradle.kts
+!settings.gradle.kts
+!gradle.properties
+!server/
+

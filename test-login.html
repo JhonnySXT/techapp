@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест авторизации - Загородный клуб "Дача"</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .token {
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Тест авторизации - Загородный клуб "Дача"</h1>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="admin@techapp.local" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" value="admin123" required>
+            </div>
+            
+            <button type="submit">Войти</button>
+        </form>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.style.display = 'none';
+            resultDiv.className = 'result';
+            
+            try {
+                const response = await fetch('http://localhost:8081/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                // Сначала получаем текст ответа для отладки
+                const responseText = await response.text();
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ Ошибка: Сервер вернул не JSON</strong><br>
+                        Статус: ${response.status} ${response.statusText}<br>
+                        Ответ сервера: <pre>${responseText || '(пусто)'}</pre><br>
+                        <br>
+                        <strong>Проверьте логи сервера в консоли!</strong>
+                    `;
+                    resultDiv.style.display = 'block';
+                    return;
+                }
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ Успешная авторизация!</strong><br>
+                        <strong>Пользователь:</strong> ${data.user.name} (${data.user.role})<br>
+                        <strong>Токен:</strong>
+                        <div class="token">${data.accessToken}</div>
+                        <br>
+                        <strong>Сохраните этот токен для дальнейших запросов!</strong>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ Ошибка авторизации</strong><br>
+                        Статус: ${response.status}<br>
+                        Сообщение: ${data.error || JSON.stringify(data)}
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                let errorDetails = error.message;
+                
+                // Попробуем получить больше информации
+                if (error.message.includes('json')) {
+                    errorDetails += '<br><br>Сервер ответил, но не вернул JSON. Возможные причины:<br>';
+                    errorDetails += '1. Сервер вернул ошибку 500 (проблема на сервере)<br>';
+                    errorDetails += '2. Проблема с базой данных<br>';
+                    errorDetails += '3. Проверьте логи сервера в консоли';
+                }
+                
+                resultDiv.innerHTML = `
+                    <strong>❌ Ошибка соединения</strong><br>
+                    ${errorDetails}<br>
+                    <br>
+                    <strong>Что проверить:</strong><br>
+                    1. Сервер запущен? Проверьте: <a href="http://localhost:8081/health" target="_blank">http://localhost:8081/health</a><br>
+                    2. Посмотрите логи сервера в консоли (там должна быть детальная ошибка)
+                `;
+            }
+            
+            resultDiv.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,19 @@
+module.exports = {
+  env: {
+    es2022: true,
+    browser: true,
+    node: true,
+  },
+  extends: ["eslint:recommended"],
+  parserOptions: {
+    ecmaVersion: "latest",
+    sourceType: "module",
+  },
+  ignorePatterns: ["dist", ".turbo", "node_modules"],
+};
+
+
+
+
+
+

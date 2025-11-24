@@ -1,0 +1,33 @@
+﻿{
+  "name": "org-chat",
+  "version": "0.0.1",
+  "private": true,
+  "packageManager": "pnpm@8.15.0",
+  "scripts": {
+    "prepare": "husky install",
+    "dev": "turbo run dev --parallel --no-daemon",
+    "dev:web": "pnpm --filter org-chat-web dev",
+    "dev:api": "pnpm --filter org-chat-api start:dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "db:migrate": "pnpm --filter org-chat-api prisma migrate dev",
+    "db:deploy": "pnpm --filter org-chat-api prisma migrate deploy",
+    "db:seed": "pnpm --filter org-chat-api prisma db seed"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.3.3",
+    "turbo": "^1.13.4",
+    "typescript": "^5.4.5"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md}": "prettier --write"
+  }
+}

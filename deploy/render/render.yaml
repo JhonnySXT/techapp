@@ -1,0 +1,19 @@
+# Конфигурация для автоматического создания сервиса на Render.com
+# Это опциональный файл - можно создать сервис и вручную через веб-интерфейс
+
+services:
+  - type: web
+    name: techapp-server
+    env: docker
+    region: frankfurt  # Измените на нужный регион: oregon, frankfurt, singapore
+    plan: free  # Или starter ($7/месяц), standard ($25/месяц)
+    dockerfilePath: deploy/render/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: PORT
+        value: 8081
+      - key: HOST
+        value: 0.0.0.0
+    healthCheckPath: /health
+    autoDeploy: true  # Автоматический деплой при push в main
+

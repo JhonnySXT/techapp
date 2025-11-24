@@ -1,0 +1,14 @@
+/* Альтернативный вариант: если хотите использовать реальное изображение леса с медведями,
+   замените background в body на:
+
+body {
+    background-image: url('путь/к/изображению/леса_с_медведями.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+Или используйте онлайн изображение:
+background-image: url('https://example.com/forest-with-bears.jpg');
+*/
+
