@@ -9,8 +9,6 @@ WORKDIR /app
 
 # Копируем только файлы, необходимые для сборки
 COPY gradle/ ./gradle/
-COPY gradlew ./
-COPY gradlew.bat ./
 COPY build.gradle.kts ./
 COPY settings.gradle.kts ./
 COPY gradle.properties ./
@@ -18,14 +16,10 @@ COPY gradle.properties ./
 # Копируем только server модуль
 COPY server/build.gradle.kts ./server/
 COPY server/src/ ./server/src/
-# Копируем resources (application.conf)
-COPY server/src/main/resources/ ./server/src/main/resources/
 
-# Даем права на выполнение gradlew
-RUN chmod +x ./gradlew
-
+# Используем встроенный Gradle из образа (не нужен gradlew)
 # Собираем JAR файл с подробными логами
-RUN ./gradlew :server:shadowJar --no-daemon --stacktrace
+RUN gradle :server:shadowJar --no-daemon --stacktrace
 
 # Финальный образ с JRE
 FROM eclipse-temurin:17-jre-alpine
