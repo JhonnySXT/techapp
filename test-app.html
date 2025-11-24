@@ -2628,16 +2628,25 @@
             try {
                 const response = await fetch(url, options);
                 
+                // Клонируем response, чтобы можно было прочитать его несколько раз
+                const responseClone = response.clone();
+                
                 // Сохраняем успешные GET запросы в кэш
                 if (response.ok && (options.method === 'GET' || !options.method)) {
-                    const data = await response.json();
-                    if (url.includes('/tickets')) {
-                        await saveToOfflineDB('tickets', data.items || []);
-                    } else if (url.includes('/users')) {
-                        await saveToOfflineDB('users', data.items || []);
+                    try {
+                        const data = await responseClone.json();
+                        if (url.includes('/tickets')) {
+                            await saveToOfflineDB('tickets', data.items || []);
+                        } else if (url.includes('/users')) {
+                            await saveToOfflineDB('users', data.items || []);
+                        }
+                    } catch (e) {
+                        // Игнорируем ошибки парсинга при кэшировании
+                        console.warn('Не удалось закэшировать ответ:', e);
                     }
                 }
                 
+                // Возвращаем оригинальный response (не клонированный)
                 return response;
             } catch (error) {
                 // В офлайн-режиме пытаемся загрузить из IndexedDB
@@ -2646,15 +2655,23 @@
                         const cachedTickets = await loadFromOfflineDB('tickets');
                         return {
                             ok: true,
+                            status: 200,
+                            statusText: 'OK',
+                            headers: new Headers({ 'Content-Type': 'application/json' }),
                             json: async () => ({ items: cachedTickets }),
-                            text: async () => JSON.stringify({ items: cachedTickets })
+                            text: async () => JSON.stringify({ items: cachedTickets }),
+                            clone: function() { return this; }
                         };
                     } else if (url.includes('/users')) {
                         const cachedUsers = await loadFromOfflineDB('users');
                         return {
                             ok: true,
+                            status: 200,
+                            statusText: 'OK',
+                            headers: new Headers({ 'Content-Type': 'application/json' }),
                             json: async () => ({ items: cachedUsers }),
-                            text: async () => JSON.stringify({ items: cachedUsers })
+                            text: async () => JSON.stringify({ items: cachedUsers }),
+                            clone: function() { return this; }
                         };
                     }
                 }
