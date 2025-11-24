@@ -55,16 +55,55 @@ COPY server/src/ ./server/src/
 # Создаем статические файлы фронтенда (для PWA) прямо в образе
 # Это гарантирует, что файлы всегда будут доступны
 
-# Создаем config.js
+# Создаем config.js (новый формат с APP_CONFIG)
 RUN cat > config.js << 'EOF'
-// config.js
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE = isLocalhost ? 'http://localhost:8081/api/v1' : window.location.origin + '/api/v1';
-const FILE_BASE = isLocalhost ? 'http://localhost:8081' : window.location.origin;
-if (typeof self !== 'undefined') {
-    self.API_BASE = API_BASE;
-    self.FILE_BASE = FILE_BASE;
-}
+// Конфигурация приложения для dev/prod окружений
+(function() {
+    'use strict';
+    
+    // Автоматическое определение окружения
+    const isProduction = window.location.protocol === 'https:' || 
+                        window.location.hostname !== 'localhost' && 
+                        window.location.hostname !== '127.0.0.1';
+    
+    // Базовый URL API
+    const getApiBase = () => {
+        if (isProduction) {
+            const protocol = window.location.protocol;
+            const hostname = window.location.hostname;
+            return `${protocol}//${hostname}/api/v1`;
+        } else {
+            return 'http://localhost:8081/api/v1';
+        }
+    };
+    
+    // Базовый URL для файлов (фотографии)
+    const getFileBase = () => {
+        if (isProduction) {
+            const protocol = window.location.protocol;
+            const hostname = window.location.hostname;
+            return `${protocol}//${hostname}`;
+        } else {
+            return 'http://localhost:8081';
+        }
+    };
+    
+    // Экспортируем конфигурацию
+    window.APP_CONFIG = {
+        API_BASE: getApiBase(),
+        FILE_BASE: getFileBase(),
+        IS_PRODUCTION: isProduction,
+        WS_URL: isProduction 
+            ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}/ws`
+            : 'ws://localhost:8081/ws'
+    };
+    
+    console.log('📱 Конфигурация приложения:', {
+        environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+        apiBase: window.APP_CONFIG.API_BASE,
+        fileBase: window.APP_CONFIG.FILE_BASE
+    });
+})();
 EOF
 
 # Создаем manifest.json
@@ -144,7 +183,6 @@ COPY --from=build /app/sw.js ./
 # test-app.html и иконки копируем из стадии build
 COPY --from=build /app/test-app.html ./
 # Иконки копируем из стадии build (если есть)
-# Иконки должны быть скопированы в стадию build, поэтому копируем их оттуда
 COPY --from=build /app/icon-*.png ./
 
 # Создаем директорию для данных (база данных SQLite)
