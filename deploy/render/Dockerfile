@@ -12,7 +12,16 @@ COPY gradle/ ./gradle/
 COPY build.gradle.kts ./
 
 # Создаем упрощенный settings.gradle.kts только для server модуля (без Android)
-RUN echo 'pluginManagement {\n  repositories {\n    mavenCentral()\n    gradlePluginPortal()\n  }\n}\nrootProject.name = "Techapp"\ninclude(":server")' > settings.gradle.kts
+RUN cat > settings.gradle.kts << 'EOF'
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+rootProject.name = "Techapp"
+include(":server")
+EOF
 
 # Создаем gradle.properties без Windows-специфичных настроек
 RUN echo 'org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8' > gradle.properties
