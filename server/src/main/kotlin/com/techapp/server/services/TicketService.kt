@@ -30,23 +30,41 @@ object TicketService {
             val creatorUuid = try {
                 UUID.fromString(creatorId)
             } catch (e: Exception) {
+                org.slf4j.LoggerFactory.getLogger(TicketService::class.java).error("Невалидный UUID создателя: $creatorId", e)
                 return@transaction null
             }
 
-            val assigneeUuid = assigneeId?.let {
+            // Обрабатываем assigneeId: если пустая строка или null, то null
+            val assigneeUuid = assigneeId?.takeIf { it.isNotBlank() }?.let {
                 try {
                     UUID.fromString(it)
                 } catch (e: Exception) {
-                    return@transaction null
+                    org.slf4j.LoggerFactory.getLogger(TicketService::class.java).warn("Невалидный UUID техника: $it", e)
+                    null // Невалидный UUID, игнорируем
                 }
             }
 
+            val logger = org.slf4j.LoggerFactory.getLogger(TicketService::class.java)
+            logger.info("Создание заявки: creatorId=$creatorId (UUID=$creatorUuid), assigneeId=$assigneeId (UUID=$assigneeUuid)")
+            
             val creator = Users.select { Users.id eq creatorUuid }.singleOrNull()
-                ?: return@transaction null
+            if (creator == null) {
+                logger.error("Пользователь-создатель не найден в базе данных: UUID=$creatorUuid, creatorId=$creatorId")
+                return@transaction null
+            }
+            logger.info("Пользователь-создатель найден: ${creator[Users.name]} (${creator[Users.role]})")
 
+            // Проверяем assignee только если он указан и является техником
             val assignee = assigneeUuid?.let {
-                Users.select { Users.id eq it }.singleOrNull()
-                    ?: return@transaction null
+                val user = Users.select { Users.id eq it }.singleOrNull()
+                if (user == null) {
+                    return@transaction null // Техник не найден
+                }
+                // Проверяем, что это техник
+                if (UserRole.valueOf(user[Users.role]) != UserRole.TECHNICIAN) {
+                    return@transaction null // Указанный пользователь не является техником
+                }
+                user
             }
 
             val now = LocalDateTime.now()
@@ -302,7 +320,7 @@ object TicketService {
                     Tickets.select {
                         (Tickets.status eq TicketStatus.NEW.name) or
                         (Tickets.status eq TicketStatus.ASSIGNED.name) or
-                        (Tickets.assigneeId eq techUuid)
+                        (Tickets.assigneeId.isNotNull() and (Tickets.assigneeId eq techUuid))
                     }
                 }
                 else -> Tickets.selectAll()

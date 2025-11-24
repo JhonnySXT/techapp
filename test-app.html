@@ -2964,11 +2964,12 @@
             e.preventDefault();
             const resultDiv = document.getElementById('createTicketResult');
             
+            const assigneeIdValue = document.getElementById('ticketAssigneeId').value.trim();
             const ticketData = {
                 title: document.getElementById('ticketTitle').value,
                 description: document.getElementById('ticketDescription').value,
                 priority: document.getElementById('ticketPriority').value,
-                assigneeId: document.getElementById('ticketAssigneeId').value || null,
+                assigneeId: assigneeIdValue || null, // Явно передаем null если пусто
                 photos: [] // Фотографии обрабатываются отдельно
             };
             
