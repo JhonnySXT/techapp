@@ -11,6 +11,8 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 
 object TicketService {
     private val json = kotlinx.serialization.json.Json { encodeDefaults = true }
@@ -76,7 +78,7 @@ object TicketService {
             // Сохраняем фотографии как JSON массив
             val photosJson = if (photos.isNotEmpty()) {
                 try {
-                    json.encodeToString(kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.serializer<String>()), photos)
+                    json.encodeToString(photos)
                 } catch (e: Exception) {
                     null // Игнорируем ошибки сериализации фотографий
                 }
@@ -251,7 +253,7 @@ object TicketService {
                 comments = ticket[Tickets.comments],
                 photos = ticket[Tickets.photos]?.let { 
                     try {
-                        json.decodeFromString(kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.serializer<String>()), it)
+                        json.decodeFromString<List<String>>(it)
                     } catch (e: Exception) {
                         emptyList()
                     }
@@ -311,11 +313,12 @@ object TicketService {
                 }
                 
                 // Используем предзагруженных пользователей вместо отдельных запросов
-                val creator = usersMap[row[Tickets.creatorId].value]
+                val creatorId = row[Tickets.creatorId].value
+                val creator = usersMap[creatorId]
                     ?: return@mapNotNull null // Пропускаем заявки с удалёнными создателями
                 
-                val assignee = row[Tickets.assigneeId]?.let { usersMap[it.value] }
-                val assignedBy = row[Tickets.assignedById]?.let { usersMap[it.value] }
+                val assignee = row[Tickets.assigneeId]?.let { assigneeId -> usersMap[assigneeId.value] }
+                val assignedBy = row[Tickets.assignedById]?.let { assignedById -> usersMap[assignedById.value] }
 
                 TicketDto(
                     id = row[Tickets.id].value.toString(),
@@ -334,7 +337,7 @@ object TicketService {
                     comments = row[Tickets.comments],
                     photos = row[Tickets.photos]?.let { 
                         try {
-                            json.decodeFromString(kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.serializer<String>()), it)
+                            json.decodeFromString<List<String>>(it)
                         } catch (e: Exception) {
                             emptyList()
                         }
