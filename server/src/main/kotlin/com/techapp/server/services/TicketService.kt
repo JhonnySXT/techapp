@@ -3,12 +3,11 @@ package com.techapp.server.services
 import com.techapp.server.database.Tickets
 import com.techapp.server.database.Users
 import com.techapp.server.models.*
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.ResultRow
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
