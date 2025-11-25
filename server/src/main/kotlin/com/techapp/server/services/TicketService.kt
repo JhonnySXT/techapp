@@ -76,7 +76,7 @@ object TicketService {
             // Сохраняем фотографии как JSON массив
             val photosJson = if (photos.isNotEmpty()) {
                 try {
-                    json.encodeToString(photos)
+                    json.encodeToString(kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.serializer<String>()), photos)
                 } catch (e: Exception) {
                     null // Игнорируем ошибки сериализации фотографий
                 }
@@ -223,16 +223,16 @@ object TicketService {
                 ?: return@transaction null
 
             // Оптимизация: загружаем всех нужных пользователей одним запросом
-            val userIds = mutableSetOf<UUID>(ticket[Tickets.creatorId])
-            ticket[Tickets.assigneeId]?.let { userIds.add(it) }
-            ticket[Tickets.assignedById]?.let { userIds.add(it) }
+            val userIds = mutableSetOf<UUID>(ticket[Tickets.creatorId].value)
+            ticket[Tickets.assigneeId]?.let { userIds.add(it.value) }
+            ticket[Tickets.assignedById]?.let { userIds.add(it.value) }
             
             val usersMap = Users.select { Users.id inList userIds }.associateBy { it[Users.id] }
             
-            val creator = usersMap[ticket[Tickets.creatorId]]
+            val creator = usersMap[ticket[Tickets.creatorId].value]
                 ?: return@transaction null // Заявка с удалённым создателем
-            val assignee = ticket[Tickets.assigneeId]?.let { usersMap[it] }
-            val assignedBy = ticket[Tickets.assignedById]?.let { usersMap[it] }
+            val assignee = ticket[Tickets.assigneeId]?.let { usersMap[it.value] }
+            val assignedBy = ticket[Tickets.assignedById]?.let { usersMap[it.value] }
 
             TicketDto(
                 id = ticket[Tickets.id].value.toString(),
@@ -251,7 +251,7 @@ object TicketService {
                 comments = ticket[Tickets.comments],
                 photos = ticket[Tickets.photos]?.let { 
                     try {
-                        json.decodeFromString<List<String>>(it)
+                        json.decodeFromString(kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.serializer<String>()), it)
                     } catch (e: Exception) {
                         emptyList()
                     }
@@ -290,9 +290,9 @@ object TicketService {
             // Оптимизация: загружаем всех пользователей одним запросом (избегаем N+1)
             val allUserIds = mutableSetOf<UUID>()
             query.forEach { row ->
-                allUserIds.add(row[Tickets.creatorId])
-                row[Tickets.assigneeId]?.let { allUserIds.add(it) }
-                row[Tickets.assignedById]?.let { allUserIds.add(it) }
+                allUserIds.add(row[Tickets.creatorId].value)
+                row[Tickets.assigneeId]?.let { allUserIds.add(it.value) }
+                row[Tickets.assignedById]?.let { allUserIds.add(it.value) }
             }
             
             val usersMap = if (allUserIds.isNotEmpty()) {
@@ -311,11 +311,11 @@ object TicketService {
                 }
                 
                 // Используем предзагруженных пользователей вместо отдельных запросов
-                val creator = usersMap[row[Tickets.creatorId]]
+                val creator = usersMap[row[Tickets.creatorId].value]
                     ?: return@mapNotNull null // Пропускаем заявки с удалёнными создателями
                 
-                val assignee = row[Tickets.assigneeId]?.let { usersMap[it] }
-                val assignedBy = row[Tickets.assignedById]?.let { usersMap[it] }
+                val assignee = row[Tickets.assigneeId]?.let { usersMap[it.value] }
+                val assignedBy = row[Tickets.assignedById]?.let { usersMap[it.value] }
 
                 TicketDto(
                     id = row[Tickets.id].value.toString(),
@@ -334,7 +334,7 @@ object TicketService {
                     comments = row[Tickets.comments],
                     photos = row[Tickets.photos]?.let { 
                         try {
-                            json.decodeFromString<List<String>>(it)
+                            json.decodeFromString(kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.serializer<String>()), it)
                         } catch (e: Exception) {
                             emptyList()
                         }
