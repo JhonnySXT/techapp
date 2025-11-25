@@ -3,6 +3,8 @@ package com.techapp.server.services
 import com.techapp.server.database.Tickets
 import com.techapp.server.database.Users
 import com.techapp.server.models.*
+import com.techapp.server.plugins.WebSocketManager
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -35,6 +37,29 @@ object TicketService {
             name = user[Users.name],
             role = UserRole.valueOf(user[Users.role])
         )
+    }
+    
+    // Helper функция для отправки уведомлений через WebSocket
+    private fun notifyUsers(ticket: TicketDto, userIds: List<String>) {
+        if (userIds.isEmpty()) return
+        try {
+            runBlocking {
+                WebSocketManager.notifyTicketUpdate(ticket, userIds)
+            }
+        } catch (e: Exception) {
+            logger.warn("Ошибка отправки WebSocket уведомления: ${e.message}", e)
+        }
+    }
+    
+    // Получить список ID пользователей для уведомлений (менеджеры и админы)
+    private fun getManagersAndAdminsIds(): List<String> {
+        return transaction {
+            Users.select {
+                (Users.role eq UserRole.MANAGER.name) or
+                (Users.role eq UserRole.DIRECTOR.name) or
+                (Users.role eq UserRole.ADMIN.name)
+            }.map { it[Users.id].value.toString() }
+        }
     }
     
     fun createTicket(
@@ -97,7 +122,7 @@ object TicketService {
                 it[Tickets.photos] = photosJson
             } get Tickets.id
 
-            TicketDto(
+            val ticket = TicketDto(
                 id = ticketId.value.toString(),
                 title = title,
                 description = description,
@@ -120,6 +145,14 @@ object TicketService {
                 deadlineAt = deadlineAt,
                 photos = photos
             )
+            
+            // Отправляем уведомления через WebSocket
+            val notifyUserIds = mutableListOf(creatorId)
+            assigneeId?.let { notifyUserIds.add(it) }
+            notifyUserIds.addAll(getManagersAndAdminsIds())
+            notifyUsers(ticket, notifyUserIds.distinct())
+            
+            ticket
         }
     }
 
@@ -163,7 +196,18 @@ object TicketService {
                 }
             }
 
-            getTicketById(ticketId)
+            val ticket = getTicketById(ticketId)
+            
+            // Отправляем уведомления через WebSocket
+            ticket?.let { t ->
+                val notifyUserIds = mutableListOf<String>()
+                t.creator.id.let { notifyUserIds.add(it) }
+                t.assignee?.id?.let { notifyUserIds.add(it) }
+                notifyUserIds.addAll(getManagersAndAdminsIds())
+                notifyUsers(t, notifyUserIds.distinct())
+            }
+            
+            ticket
         }
     }
 
@@ -195,7 +239,18 @@ object TicketService {
                 it[Tickets.updatedAt] = LocalDateTime.now()
             }
 
-            getTicketById(ticketId)
+            val ticket = getTicketById(ticketId)
+            
+            // Отправляем уведомления через WebSocket
+            ticket?.let { t ->
+                val notifyUserIds = mutableListOf<String>()
+                t.creator.id.let { notifyUserIds.add(it) }
+                t.assignee?.id?.let { notifyUserIds.add(it) }
+                notifyUserIds.addAll(getManagersAndAdminsIds())
+                notifyUsers(t, notifyUserIds.distinct())
+            }
+            
+            ticket
         }
     }
 
@@ -229,7 +284,7 @@ object TicketService {
             ticket[Tickets.assigneeId]?.let { userIds.add(it.value) }
             ticket[Tickets.assignedById]?.let { userIds.add(it.value) }
             
-            val usersMap = Users.select { Users.id inList userIds }.associateBy { it[Users.id] }
+            val usersMap = Users.select { Users.id inList userIds }.associateBy { it[Users.id].value }
             
             val creator = usersMap[ticket[Tickets.creatorId].value]
                 ?: return@transaction null // Заявка с удалённым создателем
@@ -298,9 +353,9 @@ object TicketService {
             }
             
             val usersMap = if (allUserIds.isNotEmpty()) {
-                Users.select { Users.id inList allUserIds }.associateBy { it[Users.id] }
+                Users.select { Users.id inList allUserIds }.associateBy { it[Users.id].value }
             } else {
-                emptyMap()
+                emptyMap<UUID, ResultRow>()
             }
             
             query.mapNotNull { row ->
