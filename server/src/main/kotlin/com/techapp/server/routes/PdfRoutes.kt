@@ -57,8 +57,8 @@ fun Route.pdfRoutes() {
                     call.response.header("Content-Type", "application/pdf")
                     call.respond(pdfBytes)
                 } catch (e: Exception) {
-                    println("Ошибка при генерации PDF: ${e.message}")
-                    e.printStackTrace()
+                    val logger = org.slf4j.LoggerFactory.getLogger(PdfRoutes::class.java)
+                    logger.error("Ошибка при генерации PDF", e)
                     call.respond(
                         HttpStatusCode.InternalServerError,
                         mapOf("error" to "Ошибка генерации PDF: ${e.message ?: "Неизвестная ошибка"}")

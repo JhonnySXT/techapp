@@ -7,15 +7,34 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.time.Instant
+import org.jetbrains.exposed.sql.ResultRow
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
 
 object TicketService {
     private val json = kotlinx.serialization.json.Json { encodeDefaults = true }
+    private val logger = org.slf4j.LoggerFactory.getLogger(TicketService::class.java)
+    
+    // Helper функция для безопасного парсинга UUID
+    private fun parseUuid(uuidString: String, context: String): UUID? {
+        return try {
+            UUID.fromString(uuidString)
+        } catch (e: Exception) {
+            logger.error("Ошибка парсинга UUID ($context): $uuidString", e)
+            null
+        }
+    }
+    
+    // Helper функция для создания UserSummaryDto из Users
+    private fun toUserSummaryDto(user: ResultRow): UserSummaryDto {
+        return UserSummaryDto(
+            id = user[Users.id].value.toString(),
+            name = user[Users.name],
+            role = UserRole.valueOf(user[Users.role])
+        )
+    }
     
     fun createTicket(
         title: String,
@@ -27,24 +46,10 @@ object TicketService {
         photos: List<String> = emptyList()
     ): TicketDto? {
         return transaction {
-            val creatorUuid = try {
-                UUID.fromString(creatorId)
-            } catch (e: Exception) {
-                org.slf4j.LoggerFactory.getLogger(TicketService::class.java).error("Невалидный UUID создателя: $creatorId", e)
-                return@transaction null
-            }
+            val creatorUuid = parseUuid(creatorId, "creatorId") ?: return@transaction null
 
             // Обрабатываем assigneeId: если пустая строка или null, то null
-            val assigneeUuid = assigneeId?.takeIf { it.isNotBlank() }?.let {
-                try {
-                    UUID.fromString(it)
-                } catch (e: Exception) {
-                    org.slf4j.LoggerFactory.getLogger(TicketService::class.java).warn("Невалидный UUID техника: $it", e)
-                    null // Невалидный UUID, игнорируем
-                }
-            }
-
-            val logger = org.slf4j.LoggerFactory.getLogger(TicketService::class.java)
+            val assigneeUuid = assigneeId?.takeIf { it.isNotBlank() }?.let { parseUuid(it, "assigneeId") }
             logger.info("Создание заявки: creatorId=$creatorId (UUID=$creatorUuid), assigneeId=$assigneeId (UUID=$assigneeUuid)")
             
             val creator = Users.select { Users.id eq creatorUuid }.singleOrNull()
@@ -119,17 +124,8 @@ object TicketService {
 
     fun acceptTicket(ticketId: String, technicianId: String, estimatedCompletionTime: Long? = null): TicketDto? {
         return transaction {
-            val ticketUuid = try {
-                UUID.fromString(ticketId)
-            } catch (e: Exception) {
-                return@transaction null
-            }
-
-            val techUuid = try {
-                UUID.fromString(technicianId)
-            } catch (e: Exception) {
-                return@transaction null
-            }
+            val ticketUuid = parseUuid(ticketId, "ticketId") ?: return@transaction null
+            val techUuid = parseUuid(technicianId, "technicianId") ?: return@transaction null
 
             val ticket = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
                 ?: return@transaction null
@@ -172,31 +168,14 @@ object TicketService {
 
     fun assignTicket(ticketId: String, technicianId: String, assignedById: String): TicketDto? {
         return transaction {
-            val ticketUuid = try {
-                UUID.fromString(ticketId)
-            } catch (e: Exception) {
-                println("Ошибка парсинга ticketId: $ticketId, ошибка: ${e.message}")
-                return@transaction null
-            }
-
-            val techUuid = try {
-                UUID.fromString(technicianId)
-            } catch (e: Exception) {
-                println("Ошибка парсинга technicianId: $technicianId, ошибка: ${e.message}")
-                return@transaction null
-            }
-
-            val managerUuid = try {
-                UUID.fromString(assignedById)
-            } catch (e: Exception) {
-                println("Ошибка парсинга assignedById: $assignedById, ошибка: ${e.message}")
-                return@transaction null
-            }
+            val ticketUuid = parseUuid(ticketId, "ticketId") ?: return@transaction null
+            val techUuid = parseUuid(technicianId, "technicianId") ?: return@transaction null
+            val managerUuid = parseUuid(assignedById, "assignedById") ?: return@transaction null
 
             // Проверяем, что заявка существует
             val ticket = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
                 ?: run {
-                    println("Заявка не найдена: $ticketId")
+                    logger.warn("Заявка не найдена: $ticketId")
                     return@transaction null
                 }
 
@@ -221,11 +200,7 @@ object TicketService {
 
     fun completeTicket(ticketId: String, comments: String? = null): TicketDto? {
         return transaction {
-            val ticketUuid = try {
-                UUID.fromString(ticketId)
-            } catch (e: Exception) {
-                return@transaction null
-            }
+            val ticketUuid = parseUuid(ticketId, "ticketId") ?: return@transaction null
 
             val ticket = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
                 ?: return@transaction null
@@ -243,24 +218,22 @@ object TicketService {
 
     fun getTicketById(ticketId: String): TicketDto? {
         return transaction {
-            val ticketUuid = try {
-                UUID.fromString(ticketId)
-            } catch (e: Exception) {
-                return@transaction null
-            }
+            val ticketUuid = parseUuid(ticketId, "ticketId") ?: return@transaction null
 
             val ticket = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
                 ?: return@transaction null
 
-            val creator = Users.select { Users.id eq ticket[Tickets.creatorId] }.singleOrNull()
+            // Оптимизация: загружаем всех нужных пользователей одним запросом
+            val userIds = mutableSetOf<UUID>(ticket[Tickets.creatorId])
+            ticket[Tickets.assigneeId]?.let { userIds.add(it) }
+            ticket[Tickets.assignedById]?.let { userIds.add(it) }
+            
+            val usersMap = Users.select { Users.id inList userIds }.associateBy { it[Users.id] }
+            
+            val creator = usersMap[ticket[Tickets.creatorId]]
                 ?: return@transaction null // Заявка с удалённым создателем
-            val assignee = ticket[Tickets.assigneeId]?.let {
-                Users.select { Users.id eq it }.singleOrNull()
-            }
-
-            val assignedBy = ticket[Tickets.assignedById]?.let {
-                Users.select { Users.id eq it }.singleOrNull()
-            }
+            val assignee = ticket[Tickets.assigneeId]?.let { usersMap[it] }
+            val assignedBy = ticket[Tickets.assignedById]?.let { usersMap[it] }
 
             TicketDto(
                 id = ticket[Tickets.id].value.toString(),
@@ -268,25 +241,9 @@ object TicketService {
                 description = ticket[Tickets.description],
                 priority = TicketPriority.valueOf(ticket[Tickets.priority]),
                 status = TicketStatus.valueOf(ticket[Tickets.status]),
-                creator = UserSummaryDto(
-                    id = creator[Users.id].value.toString(),
-                    name = creator[Users.name],
-                    role = UserRole.valueOf(creator[Users.role])
-                ),
-                assignee = assignee?.let {
-                    UserSummaryDto(
-                        id = it[Users.id].value.toString(),
-                        name = it[Users.name],
-                        role = UserRole.valueOf(it[Users.role])
-                    )
-                },
-                assignedBy = assignedBy?.let {
-                    UserSummaryDto(
-                        id = it[Users.id].value.toString(),
-                        name = it[Users.name],
-                        role = UserRole.valueOf(it[Users.role])
-                    )
-                },
+                creator = toUserSummaryDto(creator),
+                assignee = assignee?.let { toUserSummaryDto(it) },
+                assignedBy = assignedBy?.let { toUserSummaryDto(it) },
                 createdAt = ticket[Tickets.createdAt].atZone(ZoneId.systemDefault()).toInstant().epochSecond,
                 updatedAt = ticket[Tickets.updatedAt].atZone(ZoneId.systemDefault()).toInstant().epochSecond,
                 completedAt = ticket[Tickets.completedAt]?.atZone(ZoneId.systemDefault())?.toInstant()?.epochSecond,
@@ -312,11 +269,7 @@ object TicketService {
                 role == UserRole.TECHNICIAN && userId != null -> {
                     // Техники видят все заявки со статусом NEW или ASSIGNED (чтобы могли принять),
                     // а также заявки, где они назначены
-                    val techUuid = try {
-                        UUID.fromString(userId)
-                    } catch (e: Exception) {
-                        return@transaction emptyList()
-                    }
+                    val techUuid = parseUuid(userId, "userId") ?: return@transaction emptyList()
                     Tickets.select {
                         (Tickets.status eq TicketStatus.NEW.name) or
                         (Tickets.status eq TicketStatus.ASSIGNED.name) or
@@ -335,6 +288,20 @@ object TicketService {
                 else -> null
             }
 
+            // Оптимизация: загружаем всех пользователей одним запросом (избегаем N+1)
+            val allUserIds = mutableSetOf<UUID>()
+            query.forEach { row ->
+                allUserIds.add(row[Tickets.creatorId])
+                row[Tickets.assigneeId]?.let { allUserIds.add(it) }
+                row[Tickets.assignedById]?.let { allUserIds.add(it) }
+            }
+            
+            val usersMap = if (allUserIds.isNotEmpty()) {
+                Users.select { Users.id inList allUserIds }.associateBy { it[Users.id] }
+            } else {
+                emptyMap()
+            }
+            
             query.mapNotNull { row ->
                 // Если указан период, фильтруем по дате завершения
                 if (periodStart != null && row[Tickets.completedAt] != null) {
@@ -344,16 +311,12 @@ object TicketService {
                     }
                 }
                 
-                val creator = Users.select { Users.id eq row[Tickets.creatorId] }.singleOrNull()
+                // Используем предзагруженных пользователей вместо отдельных запросов
+                val creator = usersMap[row[Tickets.creatorId]]
                     ?: return@mapNotNull null // Пропускаем заявки с удалёнными создателями
                 
-                val assignee = row[Tickets.assigneeId]?.let {
-                    Users.select { Users.id eq it }.singleOrNull()
-                }
-
-                val assignedBy = row[Tickets.assignedById]?.let {
-                    Users.select { Users.id eq it }.singleOrNull()
-                }
+                val assignee = row[Tickets.assigneeId]?.let { usersMap[it] }
+                val assignedBy = row[Tickets.assignedById]?.let { usersMap[it] }
 
                 TicketDto(
                     id = row[Tickets.id].value.toString(),
@@ -361,25 +324,9 @@ object TicketService {
                     description = row[Tickets.description],
                     priority = TicketPriority.valueOf(row[Tickets.priority]),
                     status = TicketStatus.valueOf(row[Tickets.status]),
-                    creator = UserSummaryDto(
-                        id = creator[Users.id].value.toString(),
-                        name = creator[Users.name],
-                        role = UserRole.valueOf(creator[Users.role])
-                    ),
-                    assignee = assignee?.let {
-                        UserSummaryDto(
-                            id = it[Users.id].value.toString(),
-                            name = it[Users.name],
-                            role = UserRole.valueOf(it[Users.role])
-                        )
-                    },
-                    assignedBy = assignedBy?.let {
-                        UserSummaryDto(
-                            id = it[Users.id].value.toString(),
-                            name = it[Users.name],
-                            role = UserRole.valueOf(it[Users.role])
-                        )
-                    },
+                    creator = toUserSummaryDto(creator),
+                    assignee = assignee?.let { toUserSummaryDto(it) },
+                    assignedBy = assignedBy?.let { toUserSummaryDto(it) },
                     createdAt = row[Tickets.createdAt].atZone(ZoneId.systemDefault()).toInstant().epochSecond,
                     updatedAt = row[Tickets.updatedAt].atZone(ZoneId.systemDefault()).toInstant().epochSecond,
                     completedAt = row[Tickets.completedAt]?.atZone(ZoneId.systemDefault())?.toInstant()?.epochSecond,

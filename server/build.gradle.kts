@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm")
-    kotlin("plugin.serialization") version "1.9.24"
+    kotlin("plugin.serialization")
     id("io.ktor.plugin") version "2.3.7"
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
@@ -46,6 +46,14 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// Настройка компиляции Kotlin
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs = listOf("-Xjsr305=strict")
+    }
 }
 
 // Настройка shadowJar для создания JAR со всеми зависимостями

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест функций приложения</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-result.passed {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-result.failed {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-result.running {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4a7c2a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #6b9f4a;
+        }
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Тестирование функций приложения</h1>
+    
+    <div class="test-container">
+        <h2>Управление тестами</h2>
+        <button onclick="runAllTests()">▶️ Запустить все тесты</button>
+        <button onclick="clearResults()">🗑️ Очистить результаты</button>
+    </div>
+    
+    <div id="testResults" class="test-container">
+        <h2>Результаты тестов</h2>
+        <div id="results"></div>
+        <div id="summary" class="summary" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8081/api/v1';
+        
+        const TEST_USERS = {
+            manager: { login: 'Петрова В.В.', password: 'petrow' },
+            technician: { login: 'Ананьев М.О.', password: '123456' },
+            admin: { login: 'Богданов Е.И.', password: 'qerTY123' }
+        };
+        
+        let authTokens = {};
+        let testResults = [];
+        
+        async function fetchAPI(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(options.token ? { 'Authorization': `Bearer ${options.token}` } : {}),
+                        ...(options.headers || {})
+                    }
+                });
+                
+                const text = await response.text();
+                let data = {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    data = { error: 'Invalid JSON', text };
+                }
+                
+                return { response, data };
+            } catch (error) {
+                return { response: null, data: { error: error.message } };
+            }
+        }
+        
+        function addTestResult(name, passed, message = '') {
+            testResults.push({ name, passed, message, time: new Date() });
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${passed ? 'passed' : 'failed'}`;
+            resultDiv.innerHTML = `
+                <span>${passed ? '✅' : '❌'}</span>
+                <span><strong>${name}</strong>${message ? ': ' + message : ''}</span>
+            `;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        async function testHealthCheck() {
+            addTestResult('Health Check', true, 'Проверка...');
+            try {
+                const response = await fetch('http://localhost:8081/health');
+                const passed = response.ok || response.status === 200;
+                addTestResult('Health Check', passed, passed ? 'Сервер работает' : `Статус: ${response.status}`);
+                return passed;
+            } catch (error) {
+                addTestResult('Health Check', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testLogin(userType) {
+            const user = TEST_USERS[userType];
+            addTestResult(`Авторизация (${userType})`, true, 'Проверка...');
+            
+            try {
+                const { response, data } = await fetchAPI(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    body: JSON.stringify(user)
+                });
+                
+                if (response?.ok && data.accessToken) {
+                    authTokens[userType] = data.accessToken;
+                    addTestResult(`Авторизация (${userType})`, true, `Пользователь: ${data.user.name}`);
+                    return true;
+                } else {
+                    addTestResult(`Авторизация (${userType})`, false, data.error || 'Ошибка авторизации');
+                    return false;
+                }
+            } catch (error) {
+                addTestResult(`Авторизация (${userType})`, false, error.message);
+                return false;
+            }
+        }
+        
+        async function testLoadTickets() {
+            if (!authTokens.manager) {
+                addTestResult('Загрузка заявок', false, 'Нет токена авторизации');
+                return false;
+            }
+            
+            addTestResult('Загрузка заявок', true, 'Проверка...');
+            try {
+                const { response, data } = await fetchAPI(`${API_BASE}/tickets`, {
+                    token: authTokens.manager
+                });
+                
+                const passed = response?.ok === true && Array.isArray(data.items);
+                addTestResult('Загрузка заявок', passed, 
+                    passed ? `Найдено заявок: ${data.items.length}` : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Загрузка заявок', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testLoadUsers() {
+            if (!authTokens.manager) {
+                addTestResult('Загрузка пользователей', false, 'Нет токена авторизации');
+                return false;
+            }
+            
+            addTestResult('Загрузка пользователей', true, 'Проверка...');
+            try {
+                const { response, data } = await fetchAPI(`${API_BASE}/users`, {
+                    token: authTokens.manager
+                });
+                
+                const passed = response?.ok === true && Array.isArray(data.items);
+                addTestResult('Загрузка пользователей', passed,
+                    passed ? `Найдено пользователей: ${data.items.length}` : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Загрузка пользователей', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testCreateTicket() {
+            if (!authTokens.manager) {
+                addTestResult('Создание заявки', false, 'Нет токена авторизации');
+                return null;
+            }
+            
+            addTestResult('Создание заявки', true, 'Проверка...');
+            try {
+                const ticketData = {
+                    title: `Тестовая заявка ${Date.now()}`,
+                    description: 'Это тестовая заявка для проверки функциональности',
+                    priority: 'MEDIUM'
+                };
+                
+                const { response, data } = await fetchAPI(`${API_BASE}/tickets`, {
+                    method: 'POST',
+                    token: authTokens.manager,
+                    body: JSON.stringify(ticketData)
+                });
+                
+                if (response?.ok && data.id) {
+                    addTestResult('Создание заявки', true, `ID: ${data.id}`);
+                    return data.id;
+                } else {
+                    addTestResult('Создание заявки', false, data.error || 'Ошибка создания');
+                    return null;
+                }
+            } catch (error) {
+                addTestResult('Создание заявки', false, error.message);
+                return null;
+            }
+        }
+        
+        async function testAssignTicket(ticketId) {
+            if (!ticketId) {
+                addTestResult('Назначение техника', false, 'Нет ID заявки');
+                return false;
+            }
+            
+            if (!authTokens.manager) {
+                addTestResult('Назначение техника', false, 'Нет токена менеджера');
+                return false;
+            }
+            
+            addTestResult('Назначение техника', true, 'Проверка...');
+            try {
+                // Получаем список техников
+                const { response: usersResp, data: usersData } = await fetchAPI(`${API_BASE}/users`, {
+                    token: authTokens.manager
+                });
+                
+                if (!usersResp?.ok || !Array.isArray(usersData.items)) {
+                    addTestResult('Назначение техника', false, 'Не удалось загрузить техников');
+                    return false;
+                }
+                
+                const technician = usersData.items.find(u => u.role === 'TECHNICIAN');
+                if (!technician) {
+                    addTestResult('Назначение техника', false, 'Нет доступных техников');
+                    return false;
+                }
+                
+                const { response, data } = await fetchAPI(`${API_BASE}/tickets/${ticketId}/assign`, {
+                    method: 'PUT',
+                    token: authTokens.manager,
+                    body: JSON.stringify({ technicianId: technician.id })
+                });
+                
+                const passed = response?.ok === true;
+                addTestResult('Назначение техника', passed,
+                    passed ? `Назначен: ${technician.name}` : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Назначение техника', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testAcceptTicket(ticketId) {
+            if (!ticketId) {
+                addTestResult('Принятие заявки', false, 'Нет ID заявки');
+                return false;
+            }
+            
+            // Авторизуемся как техник
+            if (!authTokens.technician) {
+                const loggedIn = await testLogin('technician');
+                if (!loggedIn) return false;
+            }
+            
+            addTestResult('Принятие заявки', true, 'Проверка...');
+            try {
+                const { response, data } = await fetchAPI(`${API_BASE}/tickets/${ticketId}/accept`, {
+                    method: 'PUT',
+                    token: authTokens.technician,
+                    body: JSON.stringify({ estimatedCompletionTime: Math.floor(Date.now() / 1000) + 3600 })
+                });
+                
+                const passed = response?.ok === true;
+                addTestResult('Принятие заявки', passed,
+                    passed ? 'Заявка принята' : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Принятие заявки', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testCompleteTicket(ticketId) {
+            if (!ticketId) {
+                addTestResult('Завершение заявки', false, 'Нет ID заявки');
+                return false;
+            }
+            
+            if (!authTokens.technician) {
+                addTestResult('Завершение заявки', false, 'Нет токена техника');
+                return false;
+            }
+            
+            addTestResult('Завершение заявки', true, 'Проверка...');
+            try {
+                const { response, data } = await fetchAPI(`${API_BASE}/tickets/${ticketId}/complete`, {
+                    method: 'PUT',
+                    token: authTokens.technician,
+                    body: JSON.stringify({ comments: 'Тестовое завершение заявки' })
+                });
+                
+                const passed = response?.ok === true;
+                addTestResult('Завершение заявки', passed,
+                    passed ? 'Заявка завершена' : (data.error || 'Ошибка'));
+                return passed;
+            } catch (error) {
+                addTestResult('Завершение заявки', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testPDFExport() {
+            if (!authTokens.manager) {
+                addTestResult('Экспорт PDF', false, 'Нет токена авторизации');
+                return false;
+            }
+            
+            addTestResult('Экспорт PDF', true, 'Проверка...');
+            try {
+                const response = await fetch(`${API_BASE}/tickets/export/pdf?period=day`, {
+                    headers: { 'Authorization': `Bearer ${authTokens.manager}` }
+                });
+                
+                const passed = response.ok && response.headers.get('content-type')?.includes('pdf');
+                addTestResult('Экспорт PDF', passed, passed ? 'PDF создан' : `Статус: ${response.status}`);
+                return passed;
+            } catch (error) {
+                addTestResult('Экспорт PDF', false, error.message);
+                return false;
+            }
+        }
+        
+        async function testOfflineSupport() {
+            const hasIndexedDB = typeof indexedDB !== 'undefined';
+            const hasServiceWorker = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
+            const hasNotifications = typeof Notification !== 'undefined';
+            
+            addTestResult('Поддержка IndexedDB', hasIndexedDB, hasIndexedDB ? 'Доступна' : 'Недоступна');
+            addTestResult('Поддержка Service Worker', hasServiceWorker, hasServiceWorker ? 'Доступна' : 'Недоступна');
+            addTestResult('Поддержка уведомлений', hasNotifications, hasNotifications ? 'Доступна' : 'Недоступна');
+            
+            return hasIndexedDB && hasServiceWorker && hasNotifications;
+        }
+        
+        async function runAllTests() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+            testResults = [];
+            
+            console.log('🧪 Запуск тестов...\n');
+            
+            // Проверка сервера
+            await testHealthCheck();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Авторизация
+            await testLogin('manager');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Основные тесты
+            await testLoadUsers();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testLoadTickets();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Тест создания заявки
+            const ticketId = await testCreateTicket();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Тест назначения техника
+            if (ticketId) {
+                await testAssignTicket(ticketId);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Тест принятия заявки (создаем новую)
+            const newTicketId = await testCreateTicket();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            if (newTicketId) {
+                await testAcceptTicket(newTicketId);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Тест завершения заявки
+            if (newTicketId) {
+                await testCompleteTicket(newTicketId);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Тест экспорта PDF
+            await testPDFExport();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Тесты поддержки офлайн-режима
+            await testOfflineSupport();
+            
+            // Итоги
+            const passed = testResults.filter(r => r.passed).length;
+            const failed = testResults.filter(r => !r.passed).length;
+            const total = testResults.length;
+            const successRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+            
+            const summaryDiv = document.getElementById('summary');
+            summaryDiv.style.display = 'block';
+            summaryDiv.innerHTML = `
+                <h3>📊 Итоги тестирования</h3>
+                <p><strong>Всего тестов:</strong> ${total}</p>
+                <p><strong>✅ Успешно:</strong> ${passed}</p>
+                <p><strong>❌ Ошибок:</strong> ${failed}</p>
+                <p><strong>📈 Успешность:</strong> ${successRate}%</p>
+            `;
+            
+            console.log('\n' + '='.repeat(50));
+            console.log(`📊 Итоги тестирования:`);
+            console.log(`✅ Успешно: ${passed}`);
+            console.log(`❌ Ошибок: ${failed}`);
+            console.log(`📈 Успешность: ${successRate}%`);
+            console.log('='.repeat(50));
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+            testResults = [];
+        }
+    </script>
+</body>
+</html>
+

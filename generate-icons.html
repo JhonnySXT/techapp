@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор иконок для PWA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        canvas {
+            border: 2px solid #ddd;
+            margin: 20px 0;
+            display: block;
+        }
+        button {
+            background: #4a7c2a;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2d5016;
+        }
+        .preview {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .preview-item {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Генератор иконок для PWA</h1>
+        <p>Нажмите кнопки ниже, чтобы создать иконки. Они автоматически скачаются.</p>
+        
+        <div class="preview">
+            <div class="preview-item">
+                <h3>192x192</h3>
+                <canvas id="canvas192" width="192" height="192"></canvas>
+                <br>
+                <button onclick="generateIcon(192)">Создать icon-192.png</button>
+            </div>
+            <div class="preview-item">
+                <h3>512x512</h3>
+                <canvas id="canvas512" width="512" height="512"></canvas>
+                <br>
+                <button onclick="generateIcon(512)">Создать icon-512.png</button>
+            </div>
+        </div>
+        
+        <button onclick="generateBoth()" style="background: #2196F3; font-size: 18px; padding: 15px 30px;">
+            🚀 Создать обе иконки сразу
+        </button>
+    </div>
+
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            
+            // Очистка
+            ctx.clearRect(0, 0, size, size);
+            
+            // Фон с градиентом
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#4a7c2a');
+            gradient.addColorStop(1, '#1a3d0f');
+            
+            // Скругленные углы
+            const radius = size * 0.1;
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Буква "Д" в старорусском стиле
+            const centerX = size / 2;
+            const centerY = size / 2;
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#2d5016';
+            ctx.lineWidth = size * 0.015;
+            
+            // Используем крупный декоративный шрифт
+            const fontSize = size * 0.5;
+            ctx.font = `bold ${fontSize}px 'Times New Roman', serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Рисуем букву "Д" с обводкой
+            ctx.strokeText('Д', centerX, centerY);
+            ctx.fillText('Д', centerX, centerY);
+        }
+        
+        function downloadCanvas(canvas, filename) {
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+        
+        function generateIcon(size) {
+            const canvas = document.getElementById(`canvas${size}`);
+            drawIcon(canvas, size);
+            downloadCanvas(canvas, `icon-${size}.png`);
+        }
+        
+        function generateBoth() {
+            generateIcon(192);
+            setTimeout(() => generateIcon(512), 500);
+        }
+        
+        // Рисуем превью при загрузке
+        window.onload = function() {
+            drawIcon(document.getElementById('canvas192'), 192);
+            drawIcon(document.getElementById('canvas512'), 512);
+        };
+    </script>
+</body>
+</html>
+

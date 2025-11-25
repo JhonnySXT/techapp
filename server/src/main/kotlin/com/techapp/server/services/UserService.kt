@@ -7,20 +7,27 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.mindrot.jbcrypt.BCrypt
-import java.time.Instant
 import java.time.LocalDateTime
 import java.util.*
 
 object UserService {
+    private val logger = org.slf4j.LoggerFactory.getLogger(UserService::class.java)
+    
+    // Helper функция для безопасного парсинга UUID
+    private fun parseUuid(uuidString: String): UUID? {
+        return try {
+            UUID.fromString(uuidString)
+        } catch (e: Exception) {
+            logger.warn("Невалидный UUID: $uuidString", e)
+            null
+        }
+    }
+    
     // Обновляет время последней активности пользователя
     fun updateLastSeen(userId: String) {
         try {
             transaction {
-                val uuid = try {
-                    UUID.fromString(userId)
-                } catch (e: Exception) {
-                    return@transaction
-                }
+                val uuid = parseUuid(userId) ?: return@transaction
                 
                 Users.update({ Users.id eq uuid }) {
                     it[Users.lastSeen] = LocalDateTime.now()
@@ -64,11 +71,7 @@ object UserService {
 
     fun deleteUser(userId: String): Boolean {
         return transaction {
-            val uuid = try {
-                UUID.fromString(userId)
-            } catch (e: Exception) {
-                return@transaction false
-            }
+            val uuid = parseUuid(userId) ?: return@transaction false
 
             val deleted = Users.deleteWhere { Users.id eq uuid }
             deleted > 0
@@ -77,12 +80,11 @@ object UserService {
 
     fun listUsers(): List<UserSummaryDto> {
         return transaction {
+            val logger = org.slf4j.LoggerFactory.getLogger(UserService::class.java)
             val allUsers = Users.selectAll().map {
                 val lastSeen = it[Users.lastSeen]
                 val lastSeenEpoch = lastSeen?.atZone(java.time.ZoneId.systemDefault())?.toEpochSecond()
                 val isOnline = isUserOnline(lastSeen)
-                
-                println("Пользователь ${it[Users.name]}: lastSeen=$lastSeen, isOnline=$isOnline")
                 
                 UserSummaryDto(
                     id = it[Users.id].value.toString(),
@@ -92,28 +94,24 @@ object UserService {
                     isOnline = isOnline
                 )
             }
-            println("Всего пользователей: ${allUsers.size}, онлайн: ${allUsers.count { it.isOnline }}")
+            logger.debug("Всего пользователей: ${allUsers.size}, онлайн: ${allUsers.count { it.isOnline }}")
             allUsers
         }
     }
 
     fun getUserById(userId: String): UserSummaryDto? {
         return transaction {
-            val uuid = try {
-                UUID.fromString(userId)
-            } catch (e: Exception) {
-                return@transaction null
-            }
+            val uuid = parseUuid(userId) ?: return@transaction null
 
-            Users.select { Users.id eq uuid }.singleOrNull()?.let {
-                val lastSeen = it[Users.lastSeen]
+            Users.select { Users.id eq uuid }.singleOrNull()?.let { user ->
+                val lastSeen = user[Users.lastSeen]
                 val lastSeenEpoch = lastSeen?.atZone(java.time.ZoneId.systemDefault())?.toEpochSecond()
                 val isOnline = isUserOnline(lastSeen)
                 
                 UserSummaryDto(
-                    id = it[Users.id].value.toString(),
-                    name = it[Users.name],
-                    role = UserRole.valueOf(it[Users.role]),
+                    id = user[Users.id].value.toString(),
+                    name = user[Users.name],
+                    role = UserRole.valueOf(user[Users.role]),
                     lastSeen = lastSeenEpoch,
                     isOnline = isOnline
                 )

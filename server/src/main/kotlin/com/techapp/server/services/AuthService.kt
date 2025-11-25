@@ -63,7 +63,12 @@ object AuthService {
             val role = UserRole.valueOf(decoded.getClaim("role").asString())
 
             org.jetbrains.exposed.sql.transactions.transaction {
-                val user = Users.select { Users.id eq UUID.fromString(userId) }.singleOrNull()
+                val userUuid = try {
+                    UUID.fromString(userId)
+                } catch (e: Exception) {
+                    return@transaction null
+                }
+                val user = Users.select { Users.id eq userUuid }.singleOrNull()
                     ?: return@transaction null
                 UserSummaryDto(
                     id = userId,

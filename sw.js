@@ -6,7 +6,10 @@ const API_CACHE_NAME = 'techapp-api-cache-v1';
 const STATIC_FILES = [
     '/',
     '/test-app.html',
-    '/test-login.html'
+    '/test-login.html',
+    '/config.js',
+    '/manifest.json',
+    '/sw.js'
 ];
 
 // Установка Service Worker
