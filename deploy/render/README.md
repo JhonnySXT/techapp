@@ -177,3 +177,12 @@ buildConfigField("String", "API_BASE_URL", "\"https://techapp-server.onrender.co
 
 Теперь ваш сервер доступен из интернета, и Android приложение может работать откуда угодно!
 
+
+
+
+
+
+
+
+
+

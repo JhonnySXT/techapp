@@ -1069,6 +1069,7 @@
         
         let authToken = localStorage.getItem('authToken');
         let currentUser = null;
+        let wsConnection = null; // WebSocket соединение
         
         // Маппинг ролей и имён на должности
         function getPosition(user) {
@@ -1171,6 +1172,10 @@
                     }
                     
                     console.log('✅ Успешный вход:', data.user);
+                    
+                    // Подключаемся к WebSocket для обновлений в реальном времени
+                    connectWebSocket();
+                    
                     showMainInterface();
                     showResult(resultDiv, `✅ Успешная авторизация! Пользователь: ${data.user.name} (${data.user.role})`, 'success');
                 } else {
@@ -2255,6 +2260,12 @@
         }
         
         function logout() {
+            // Закрываем WebSocket соединение
+            if (wsConnection) {
+                wsConnection.close();
+                wsConnection = null;
+            }
+            
             authToken = null;
             currentUser = null;
             localStorage.removeItem('authToken');
@@ -2265,6 +2276,131 @@
             document.getElementById('userInfo').textContent = 'Не авторизован';
             document.getElementById('login').value = '';
             document.getElementById('password').value = '';
+        }
+        
+        // Подключение к WebSocket для обновлений в реальном времени
+        function connectWebSocket() {
+            if (!authToken || !window.APP_CONFIG) {
+                console.warn('⚠️ Не могу подключиться к WebSocket: нет токена или конфигурации');
+                return;
+            }
+            
+            // Закрываем предыдущее соединение, если есть
+            if (wsConnection) {
+                wsConnection.close();
+            }
+            
+            try {
+                const wsUrl = `${window.APP_CONFIG.WS_URL}?token=${authToken}`;
+                console.log('🔌 Подключение к WebSocket:', wsUrl);
+                
+                wsConnection = new WebSocket(wsUrl);
+                
+                wsConnection.onopen = () => {
+                    console.log('✅ WebSocket подключен');
+                    updateConnectionStatus('online');
+                };
+                
+                wsConnection.onmessage = (event) => {
+                    try {
+                        // Игнорируем pong сообщения
+                        if (event.data === 'pong') {
+                            return;
+                        }
+                        
+                        const ticket = JSON.parse(event.data);
+                        console.log('📨 Получено обновление заявки через WebSocket:', ticket);
+                        
+                        // Обновляем заявку в интерфейсе
+                        updateTicketInUI(ticket);
+                        
+                        // Показываем уведомление
+                        showNotification(`Обновление заявки: ${ticket.title}`, 'info');
+                    } catch (error) {
+                        console.error('❌ Ошибка обработки WebSocket сообщения:', error);
+                    }
+                };
+                
+                wsConnection.onerror = (error) => {
+                    console.error('❌ Ошибка WebSocket:', error);
+                    console.error('URL:', wsUrl);
+                    updateConnectionStatus('offline');
+                    
+                    // Показываем уведомление пользователю
+                    showNotification('Ошибка подключения к серверу. Попытка переподключения...', 'error');
+                };
+                
+                wsConnection.onclose = (event) => {
+                    console.log('🔌 WebSocket соединение закрыто', {
+                        code: event.code,
+                        reason: event.reason,
+                        wasClean: event.wasClean
+                    });
+                    updateConnectionStatus('offline');
+                    
+                    // Не переподключаемся, если соединение было закрыто намеренно (код 1000)
+                    if (event.code === 1000) {
+                        console.log('WebSocket закрыт нормально');
+                        return;
+                    }
+                    
+                    // Пытаемся переподключиться через 3 секунды, если пользователь авторизован
+                    if (authToken) {
+                        setTimeout(() => {
+                            if (authToken) { // Проверяем, что пользователь всё ещё авторизован
+                                console.log('🔄 Попытка переподключения к WebSocket...');
+                                connectWebSocket();
+                            }
+                        }, 3000);
+                    }
+                };
+            } catch (error) {
+                console.error('❌ Ошибка создания WebSocket соединения:', error);
+            }
+        }
+        
+        // Обновление заявки в интерфейсе
+        function updateTicketInUI(updatedTicket) {
+            // Обновляем заявку в списке заявок, если он открыт
+            const ticketsTab = document.getElementById('ticketsTab');
+            if (ticketsTab && ticketsTab.style.display !== 'none') {
+                // Перезагружаем список заявок
+                loadTickets();
+            }
+            
+            // Обновляем профиль, если он открыт
+            const profileTab = document.getElementById('profileTab');
+            if (profileTab && profileTab.style.display !== 'none') {
+                loadProfile();
+            }
+        }
+        
+        // Показ уведомления
+        function showNotification(message, type = 'info') {
+            // Создаём элемент уведомления
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'info' ? '#2196F3' : type === 'success' ? '#4CAF50' : '#f44336'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                z-index: 10000;
+                max-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Удаляем уведомление через 3 секунды
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
         }
         
         function showResult(div, message, type) {
@@ -2350,6 +2486,9 @@
                     }
                     
                     showMainInterface();
+                    
+                    // Подключаемся к WebSocket для обновлений в реальном времени
+                    connectWebSocket();
                 } else {
                     throw new Error('Неверный токен');
                 }

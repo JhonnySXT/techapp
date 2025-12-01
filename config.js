@@ -34,20 +34,33 @@
         }
     };
     
+    // WebSocket URL с правильной обработкой протокола и порта
+    const getWebSocketUrl = () => {
+        if (isProduction) {
+            // В production используем тот же протокол и хост, что и для основного запроса
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const hostname = window.location.hostname;
+            const port = window.location.port ? `:${window.location.port}` : '';
+            return `${protocol}//${hostname}${port}/ws`;
+        } else {
+            // Development: localhost
+            return 'ws://localhost:8081/ws';
+        }
+    };
+    
     // Экспортируем конфигурацию
     window.APP_CONFIG = {
         API_BASE: getApiBase(),
         FILE_BASE: getFileBase(),
         IS_PRODUCTION: isProduction,
-        WS_URL: isProduction 
-            ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}/ws`
-            : 'ws://localhost:8081/ws'
+        WS_URL: getWebSocketUrl()
     };
     
     console.log('📱 Конфигурация приложения:', {
         environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
         apiBase: window.APP_CONFIG.API_BASE,
-        fileBase: window.APP_CONFIG.FILE_BASE
+        fileBase: window.APP_CONFIG.FILE_BASE,
+        wsUrl: window.APP_CONFIG.WS_URL
     });
 })();
 

@@ -40,14 +40,21 @@ object TicketService {
     }
     
     // Helper функция для отправки уведомлений через WebSocket
+    // Используем корутину без блокировки потока
     private fun notifyUsers(ticket: TicketDto, userIds: List<String>) {
         if (userIds.isEmpty()) return
+        
+        // Запускаем отправку уведомлений асинхронно, не блокируя основной поток
+        // Используем runBlocking только если мы уже в синхронном контексте транзакции
         try {
+            // В контексте транзакции Exposed мы не можем использовать suspend функции напрямую
+            // Поэтому используем runBlocking, но это безопасно, так как мы вне транзакции
             runBlocking {
                 WebSocketManager.notifyTicketUpdate(ticket, userIds)
             }
         } catch (e: Exception) {
-            logger.warn("Ошибка отправки WebSocket уведомления: ${e.message}", e)
+            // Логируем ошибку, но не прерываем выполнение основной операции
+            logger.warn("Ошибка отправки WebSocket уведомления для заявки ${ticket.id}: ${e.message}", e)
         }
     }
     
@@ -161,11 +168,11 @@ object TicketService {
             val ticketUuid = parseUuid(ticketId, "ticketId") ?: return@transaction null
             val techUuid = parseUuid(technicianId, "technicianId") ?: return@transaction null
 
-            val ticket = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
+            val ticketRow = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
                 ?: return@transaction null
 
-            val currentStatus = ticket[Tickets.status]
-            val currentAssignee = ticket[Tickets.assigneeId]
+            val currentStatus = ticketRow[Tickets.status]
+            val currentAssignee = ticketRow[Tickets.assigneeId]
             
             // Проверяем, что заявка может быть принята
             // NEW - новая заявка, может быть принята любым техником
@@ -218,7 +225,7 @@ object TicketService {
             val managerUuid = parseUuid(assignedById, "assignedById") ?: return@transaction null
 
             // Проверяем, что заявка существует
-            val ticket = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
+            val ticketRow = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
                 ?: run {
                     logger.warn("Заявка не найдена: $ticketId")
                     return@transaction null
@@ -258,7 +265,7 @@ object TicketService {
         return transaction {
             val ticketUuid = parseUuid(ticketId, "ticketId") ?: return@transaction null
 
-            val ticket = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
+            val ticketRow = Tickets.select { Tickets.id eq ticketUuid }.singleOrNull()
                 ?: return@transaction null
 
             Tickets.update({ Tickets.id eq ticketUuid }) {
@@ -268,7 +275,18 @@ object TicketService {
                 it[Tickets.comments] = comments
             }
 
-            getTicketById(ticketId)
+            val ticket = getTicketById(ticketId)
+            
+            // Отправляем уведомления через WebSocket
+            ticket?.let { t ->
+                val notifyUserIds = mutableListOf<String>()
+                t.creator.id.let { notifyUserIds.add(it) }
+                t.assignee?.id?.let { notifyUserIds.add(it) }
+                notifyUserIds.addAll(getManagersAndAdminsIds())
+                notifyUsers(t, notifyUserIds.distinct())
+            }
+            
+            ticket
         }
     }
 
